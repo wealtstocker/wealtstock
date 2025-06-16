@@ -1,0 +1,20 @@
+import express from "express";
+import {  logout, loginCustomer, registerCustomer, forgotPassword, resetPassword, registerAdmin, loginAdmin } from "../controllers/authController.js";
+import { sendOtp, verifyOtpHandler } from "../controllers/otpController.js";
+import { authenticate } from "../middlewares/authMiddleware.js";
+import { changePassword } from "../controllers/customerController.js";
+import { getUploadMiddleware } from "../utils/upload.js";
+const documentUpload = getUploadMiddleware("documents");
+const router = express.Router();
+
+router.post("/register", documentUpload.single("document"), registerCustomer);
+router.post("/admin/register", registerAdmin);
+router.post("/login", loginCustomer);
+router.post("/change-password", authenticate,changePassword );
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
+router.post("/send/otp", sendOtp);
+router.post("/verify/otp", verifyOtpHandler);
+router.post("/admin/login", loginAdmin); 
+router.post("/logout", logout);
+export default router;

@@ -39,7 +39,7 @@ app.use("/uploads", express.static("uploads"));
 app.use("/api/wallet", walletNtransactionRoutes);
 app.use("/api/trade", tradeRoutes);
 
-app.get("/", (req, res) => {
+app.get("/api", (req, res) => {
   res.send("Welcome to Role-Based Auth API (MySQL + Node.js)");
 });
 

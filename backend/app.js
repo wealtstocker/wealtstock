@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import compression from "compression";
-
+import helmet from "helmet";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import walletNtransactionRoutes from "./routes/walletNtransactionRoutes.js";
@@ -14,13 +14,13 @@ import swaggerSpec from "./swaggerSpec.js";
 import customersRouter from "./routes/customerRouter.js";
 
 const app = express();
-
+app.use(helmet());
 // CORS middleware
 app.use(
   cors({
     origin: [
-      "www.wealtstockresearchfirm.com",
-      "www.admin.wealtstockresearchfirm.com",
+      "https://wealtstockresearchfirm.com",
+      "https://admin.wealtstockresearchfirm.com",
     ],
     credentials: true,
   })

@@ -18,7 +18,10 @@ const app = express();
 // CORS middleware
 app.use(
   cors({
-    origin: "http://localhost:5174",
+    origin: [
+      "www.wealtstockresearchfirm.com",
+      "www.admin.wealtstockresearchfirm.com",
+    ],
     credentials: true,
   })
 );

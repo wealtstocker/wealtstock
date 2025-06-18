@@ -1,7 +1,6 @@
-
 import axios from "axios";
 
-const BASE_URL = "http://localhost:1010/api";
+const BASE_URL = "www.api.wealtstockresearchfirm.com/api";
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,

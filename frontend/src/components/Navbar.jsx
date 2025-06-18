@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
-import Logo from "../assets/Logo.png";
+import Logo from "../assets/logon.jfif";
 
 // Icons
 import {

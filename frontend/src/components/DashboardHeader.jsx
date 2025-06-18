@@ -1,12 +1,23 @@
 import React, { useEffect, useRef, useState } from "react";
-import { FaBars, FaBell, FaUser, FaCog, FaLock, FaSignOutAlt } from "react-icons/fa";
+import { FaBars, FaUser, FaCog, FaSignOutAlt, FaWallet } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import gsap from "gsap";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../redux/Slices/authSlice";
+import { fetchWalletBalance } from "../redux/Slices/walletSlice";
 
 const DashboardHeader = ({ onMenuClick, isSidebarOpen }) => {
   const headerRef = useRef(null);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
   const [showDropdown, setShowDropdown] = useState(false);
+
+  const { balance, loading } = useSelector((state) => state.wallet);
+
+  useEffect(() => {
+    dispatch(fetchWalletBalance()); 
+  }, [dispatch]);
 
   useEffect(() => {
     gsap.fromTo(
@@ -16,29 +27,28 @@ const DashboardHeader = ({ onMenuClick, isSidebarOpen }) => {
     );
   }, []);
 
-  const handleLogout = () => {
-    // Add logout logic here
-    navigate("/logout");
-  };
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (!headerRef.current.contains(event.target)) {
         setShowDropdown(false);
       }
     };
-  
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate("/login");
+  };
 
   return (
     <div
       ref={headerRef}
-      className={`fixed top-0 left-0 right-0 z-40  bg-white drop-shadow-inherit shadow-md transition-all duration-300 ${
-        isSidebarOpen ? "pl-40 md:pl-72" : "ml-0.5"
+      className={`fixed top-0 left-0 right-0 z-40 bg-white shadow-md transition-all duration-300 ${
+        isSidebarOpen ? "pl-0 md:pl-72" : "ml-0.5"
       }`}
     >
       <div className="flex justify-between items-center px-4 py-3">
@@ -48,14 +58,18 @@ const DashboardHeader = ({ onMenuClick, isSidebarOpen }) => {
               className="cursor-pointer text-gray-700 text-lg"
               onClick={onMenuClick}
             />
-          )
-          }
-          <h2 className="text-lg hidden md:flex-1/2  md:text-xl font-semibold">Admin Dashboard</h2>
+          )}
+          <h2 className="text-lg md:text-xl font-semibold">Admin Dashboard</h2>
         </div>
 
-        <div className="flex items-center gap-5 relative">
-          <FaBell className="text-white text-lg cursor-pointer" />
+        <div className="flex items-center gap-6 relative">
+          {/* ✅ Wallet Section */}
+          <div className="flex items-center gap-2 text-blue-700 font-semibold text-sm">
+            <FaWallet className="text-lg" />
+            {loading ? "..." : `₹${balance || balance.toFixed(2) || "0"} `}
+          </div>
 
+          {/* ✅ Profile Dropdown */}
           <div className="relative">
             <div
               onClick={() => setShowDropdown(!showDropdown)}
@@ -68,21 +82,15 @@ const DashboardHeader = ({ onMenuClick, isSidebarOpen }) => {
               <div className="absolute right-0 mt-2 w-44 bg-white text-gray-800 rounded-md shadow-lg z-50 overflow-hidden">
                 <button
                   className="w-full px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                  onClick={() => navigate("/profile")}
+                  onClick={() => navigate("/dashboard/profile")}
                 >
                   <FaUser /> Profile
                 </button>
                 <button
                   className="w-full px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                  onClick={() => navigate("/settings")}
+                  onClick={() => navigate("/dashboard/settings")}
                 >
                   <FaCog /> Settings
-                </button>
-                <button
-                  className="w-full px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                  onClick={() => navigate("/change-password")}
-                >
-                  <FaLock /> Change Password
                 </button>
                 <hr />
                 <button

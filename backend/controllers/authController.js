@@ -2,21 +2,31 @@
 import bcrypt from "bcryptjs";
 import pool from "../config/db.js";
 import { generateToken } from "../utils/token.js";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 import { sendSMS, saveOtp, verifyOtp, clearOtp } from "../utils/otp.js";
 
-
 export async function registerAdmin(req, res) {
-  const { full_name, email, phone_number, password, confirm_password, role = "admin" } = req.body;
+  const {
+    full_name,
+    email,
+    phone_number,
+    password,
+    confirm_password,
+    role = "admin",
+  } = req.body;
 
   if (!full_name || !email || !password || !confirm_password)
-    return res.status(400).json({ message: "All required fields must be filled" });
+    return res
+      .status(400)
+      .json({ message: "All required fields must be filled" });
 
   if (password !== confirm_password)
     return res.status(400).json({ message: "Passwords do not match" });
 
   try {
-    const [existing] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
+    const [existing] = await pool.query("SELECT * FROM users WHERE email = ?", [
+      email,
+    ]);
     if (existing.length > 0)
       return res.status(409).json({ message: "Admin already registered" });
 
@@ -36,18 +46,24 @@ export async function registerAdmin(req, res) {
 
 export async function loginAdmin(req, res) {
   const { email, password } = req.body;
-  console.log("email", email)
-  console.log("req.body", req.body);
 
   try {
-    const [rows] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
-    if (rows.length === 0) return res.status(400).json({ message: "Invalid credentials" });
+    const [rows] = await pool.query("SELECT * FROM users WHERE email = ?", [
+      email,
+    ]);
+    if (rows.length === 0)
+      return res.status(400).json({ message: "Invalid credentials" });
 
     const admin = rows[0];
     const isMatch = await bcrypt.compare(password, admin.password_hash);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid credentials" });
 
-    const token = generateToken({ id: admin.uuid, role: admin.role, email: admin.email });
+    const token = generateToken({
+      id: admin.uuid,
+      role: admin.role,
+      email: admin.email,
+    });
 
     res.cookie("token", token, {
       httpOnly: true,
@@ -76,7 +92,6 @@ export function logout(req, res) {
   res.status(200).json({ message: "Logged out successfully" });
 }
 
-
 export async function registerCustomer(req, res) {
   const {
     full_name,
@@ -95,11 +110,13 @@ export async function registerCustomer(req, res) {
     address,
     is_active,
   } = req.body;
-
+  console.log(req.body);
   const document_url = req.file?.path || null;
 
   if (password !== confirm_password) {
-    return res.status(400).json({ status: false, message: "Passwords do not match" });
+    return res
+      .status(400)
+      .json({ status: false, message: "Passwords do not match" });
   }
 
   try {
@@ -108,7 +125,9 @@ export async function registerCustomer(req, res) {
       [email, phone_number, aadhar_number, pan_number]
     );
     if (existing.length > 0) {
-      return res.status(409).json({ status: false, message: "Customer already registered" });
+      return res
+        .status(409)
+        .json({ status: false, message: "Customer already registered" });
     }
 
     // const password_hash = await bcrypt.hash(password, 10);
@@ -142,19 +161,22 @@ export async function registerCustomer(req, res) {
     const customer_no = result.insertId;
     const custom_id = `GRP${(5000 + customer_no).toString().padStart(6, "0")}`;
 
-    await pool.query(`UPDATE customers SET id = ? WHERE customer_no = ?`, [custom_id, customer_no]);
+    await pool.query(`UPDATE customers SET id = ? WHERE customer_no = ?`, [
+      custom_id,
+      customer_no,
+    ]);
 
     res.status(201).json({
       status: true,
       message: "Customer registered successfully",
       customer_id: custom_id,
-
     });
   } catch (err) {
-    res.status(500).json({ status: false, message: "Server error", error: err.message });
+    res
+      .status(500)
+      .json({ status: false, message: "Server error", error: err.message });
   }
 }
-
 
 export async function loginCustomer(req, res) {
   const { username, password } = req.body;
@@ -166,7 +188,9 @@ export async function loginCustomer(req, res) {
     );
 
     if (!rows.length) {
-      return res.status(404).json({ status: false, message: "Customer not found" });
+      return res
+        .status(404)
+        .json({ status: false, message: "Customer not found" });
     }
 
     const customer = rows[0];
@@ -176,9 +200,10 @@ export async function loginCustomer(req, res) {
     // }
 
     if (password !== customer.password_hash) {
-      return res.status(401).json({ status: false, message: "Incorrect password" });
+      return res
+        .status(401)
+        .json({ status: false, message: "Incorrect password" });
     }
-
 
     const token = generateToken(customer);
 
@@ -200,26 +225,30 @@ export async function loginCustomer(req, res) {
       },
     });
   } catch (err) {
-    res.status(500).json({ status: false, message: "Server error", error: err.message });
+    res
+      .status(500)
+      .json({ status: false, message: "Server error", error: err.message });
   }
-}
-
-
-
-function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 export async function forgotPassword(req, res) {
   const { phone_number } = req.body;
-  if (!phone_number) return res.status(400).json({ message: "Phone number is required" });
+  if (!phone_number)
+    return res.status(400).json({ message: "Phone number is required" });
 
   try {
-    const [users] = await pool.query("SELECT * FROM customers WHERE phone_number = ?", [phone_number]);
-    if (!users.length) return res.status(404).json({ message: "Customer not found" });
+    const [users] = await pool.query(
+      "SELECT * FROM customers WHERE phone_number = ?",
+      [phone_number]
+    );
+    if (!users.length)
+      return res.status(404).json({ message: "Customer not found" });
 
     const otp = generateOTP();
-    await sendSMS(phone_number, `Your OTP to reset password is: ${otp}. Valid for 2 minutes.`);
+    await sendSMS(
+      phone_number,
+      `Your OTP to reset password is: ${otp}. Valid for 2 minutes.`
+    );
     saveOtp(phone_number, otp);
 
     res.json({ message: "OTP sent to your phone number" });
@@ -237,10 +266,19 @@ export async function resetPassword(req, res) {
 
   try {
     const password_hash = await bcrypt.hash(new_password, 10);
-    await pool.query("UPDATE customers SET password_hash = ? WHERE phone_number = ?", [password_hash, phone_number]);
+    await pool.query(
+      "UPDATE customers SET password_hash = ? WHERE phone_number = ?",
+      [password_hash, phone_number]
+    );
     clearOtp(phone_number);
     res.json({ message: "Password reset successfully" });
   } catch (err) {
-    res.status(500).json({ message: "Error resetting password", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Error resetting password", error: err.message });
   }
+}
+
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }

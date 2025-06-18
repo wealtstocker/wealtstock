@@ -9,7 +9,7 @@ export function authenticate(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
+//  console.log("✅ Decoded token:", decoded);
     // Attach user info from token
     req.user = {
       id: decoded.id,           

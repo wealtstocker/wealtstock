@@ -1,22 +1,27 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { FaUser, FaLock } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
+import { FaUser, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import gsap from "gsap";
 import Swal from "sweetalert2";
+import { useDispatch, useSelector } from "react-redux";
+import { loginCustomer } from "../redux/Slices/authSlice";
+import loginImg from "../assets/login.jpg";
 import { toast } from "react-toastify";
-import login from "../assets/login.jpg";
 
 const LoginPage = () => {
   const formRef = useRef(null);
   const iconRefs = useRef([]);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const { loading } = useSelector((state) => state.auth);
 
   const [credentials, setCredentials] = useState({
     username: "",
     password: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Animate on mount
   useEffect(() => {
     gsap.fromTo(
       formRef.current,
@@ -47,14 +52,17 @@ const LoginPage = () => {
   const handleLogin = async () => {
     const { username, password } = credentials;
 
-    // Mock validation
-    if (username === "demo_user" && password === "demo_pass") {
-      toast.success("Login Successful!");
-      // await Swal.fire("Welcome!", "You have successfully logged in.", "success");
+    if (!username || !password) {
+      toast.error("Please fill in both fields");
+      return;
+    }
+
+    try {
+      const res = await dispatch(loginCustomer(credentials)).unwrap();
+      toast.success("Welcome " + res.customer.full_name);
       navigate("/dashboard");
-    } else {
-      toast.error("Invalid credentials");
-      Swal.fire("Oops!", "Invalid username or password", "error");
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -63,67 +71,96 @@ const LoginPage = () => {
       username: "demo_user",
       password: "demo_pass",
     });
+  };
 
+  const handleForgotPassword = async () => {
+    const { value: phone } = await Swal.fire({
+      title: "Forgot Password",
+      input: "text",
+      inputLabel: "Enter your phone number",
+      inputPlaceholder: "e.g. 9876543210",
+      showCancelButton: true,
+      confirmButtonText: "Send OTP",
+    });
+
+    if (phone) {
+      try {
+        const response = await fetch(`/api/forgot-password`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone_number: phone }),
+        });
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.message);
+
+        Swal.fire("OTP Sent", data.message, "success");
+      } catch (err) {
+        Swal.fire("Error", err.message, "error");
+      }
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="flex flex-col md:flex-row w-full max-w-5xl shadow-2xl rounded-xl overflow-hidden bg-white">
-        {/* Left Image Side */}
+        {/* Left Image */}
         <div className="md:w-1/2 hidden md:block">
-          <img src={login} alt="Login" className="w-full h-full object-cover" />
+          <img src={loginImg} alt="Login" className="w-full h-full object-cover" />
         </div>
 
-        {/* Right Form Side */}
+        {/* Right Form */}
         <div className="w-full md:w-1/2 p-10 flex items-center justify-center">
           <div ref={formRef} className="w-full max-w-md">
             <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 text-transparent bg-clip-text text-center">Login</h2>
 
-            {/* Username Field */}
+            {/* Username */}
             <div className="mb-4 relative">
               <input
                 name="username"
                 type="text"
-                placeholder="Username"
+                placeholder="Email or ID"
                 value={credentials.username}
                 onChange={handleChange}
                 className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
-              <div
-                ref={(el) => (iconRefs.current[0] = el)}
-                className="absolute left-4 top-2.5 text-blue-500 text-xl"
-              >
+              <div ref={(el) => (iconRefs.current[0] = el)} className="absolute left-4 top-2.5 text-blue-500 text-xl">
                 <FaUser />
               </div>
             </div>
 
-            {/* Password Field */}
+            {/* Password */}
             <div className="mb-6 relative">
               <input
                 name="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 value={credentials.password}
                 onChange={handleChange}
-                className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full pl-12 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
-              <div
-                ref={(el) => (iconRefs.current[1] = el)}
-                className="absolute left-4 top-2.5 text-blue-500 text-xl"
-              >
+              <div ref={(el) => (iconRefs.current[1] = el)} className="absolute left-4 top-2.5 text-blue-500 text-xl">
                 <FaLock />
               </div>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-2.5 text-gray-500"
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
             </div>
 
             {/* Login Button */}
             <button
               onClick={handleLogin}
+              disabled={loading}
               className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition duration-300"
             >
-              Sign In
+              {loading ? "Logging in..." : "Sign In"}
             </button>
 
-            {/* Demo Login Button */}
+            {/* Demo */}
             <button
               onClick={handleDemoLogin}
               className="w-full mt-3 bg-gradient-to-r from-green-500 to-teal-500 text-white font-semibold py-2 rounded-lg hover:from-green-600 hover:to-teal-600 transition duration-300"
@@ -133,8 +170,8 @@ const LoginPage = () => {
 
             {/* Bottom Links */}
             <div className="mt-4 flex justify-between text-sm text-gray-500">
-              <a href="#" className="hover:underline">Forgot Password?</a>
-              <a href="/register" className="hover:underline">Create Account</a>
+              <button onClick={handleForgotPassword} className="hover:underline">Forgot Password?</button>
+              <Link to="/register" className="hover:underline hover:scale-105">Create Account</Link>
             </div>
           </div>
         </div>

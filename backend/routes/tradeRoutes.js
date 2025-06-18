@@ -10,8 +10,8 @@ const uploadScreenshot = getUploadMiddleware("screenshots");
 router.post("/", authenticate,  createTrade);
 router.get("/", authenticate, getAllTrades);
 router.get("/:id", authenticate, getTradeById);
-router.put("/:id",   updateTrade);
+router.put("/:id", authenticate, authorizeRoles("admin", "superadmin"),   updateTrade);
 router.delete("/:id", authenticate, authorizeRoles("admin", "superadmin"), deleteTrade);
-router.put("/:id/approve", authenticate, authorizeRoles("admin", "superadmin"), approveTrade);
+router.put("/approve/:id", approveTrade);
 
 export default router;

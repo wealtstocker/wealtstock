@@ -16,6 +16,9 @@ import {
   getMyWallet,
   getAllTransactions,
   getAllFundRequests,
+  getMyFundRequests,
+  getPendingFundRequests,
+  getApprovedFundRequests,
 } from "../controllers/walletNtransactionController.js";
 
 import { authenticate } from "../middlewares/authMiddleware.js";
@@ -27,6 +30,8 @@ const screenshotUpload = getUploadMiddleware("screenshots");
 
   // Customer routes
   router.post("/fund-request", authenticate, screenshotUpload.single("screenshot"), addFundRequest);
+  router.get("/fund-requests", authenticate, getMyFundRequests);
+
   router.get("/balance", authenticate, checkBalance);
   router.get("/my-withdrawals", authenticate, getMyWithdrawals);
   router.post("/withdraw", authenticate, requestWithdrawal);
@@ -35,15 +40,17 @@ const screenshotUpload = getUploadMiddleware("screenshots");
 
 
 // Admin routes
-router.post("/approve-fund-request/:requestId", approveFundRequest);
+router.post("/approve-fund-request/:requestId", authenticate, approveFundRequest);
+router.get("/admin/fund-requests", getAllFundRequests);
+router.get("/fund-requests/pending", authenticate, authorizeRoles("admin", "superadmin"), getPendingFundRequests);
+router.get("/fund-requests/approved", authenticate, authorizeRoles("admin", "superadmin"), getApprovedFundRequests);
 
 router.put("/admin/topup",  authenticate, authorizeRoles("admin", "superadmin") ,topUpWallet);
-router.get("/all-users-balance", getAllUserBalances);
 router.get("/pending-withdrawals", getPendingWithdrawals);
 router.put("/process-withdrawal",  processWithdrawal);
-router.get("/admin/all-transactions", getAllTransactions);
+router.get("/all-balances", getAllUserBalances);
+router.get("/all-transactions", getAllTransactions);
 
-router.get("/admin/fund-requests", getAllFundRequests);
 router.patch("/fund-request/status", authenticate, authorizeRoles("admin", "superadmin"), updateFundRequestStatus);
 router.patch("/withdrawal/status",   updateWithdrawalStatus);
 

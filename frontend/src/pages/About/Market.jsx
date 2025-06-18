@@ -30,21 +30,21 @@ function Market() {
   const cardData = [
     {
       icon: <FaUserTie size={40} />,
-      title: "Expert Consultant",
+      title: "Expert Financial Consultants",
       description:
-        "Duis aute irure dolor in velit onerepreh enderit in voluptate more esse.",
+        "Our seasoned advisors offer data-driven investment strategies to help you navigate and grow in volatile markets.",
     },
     {
       icon: <FaGlobe size={40} />,
-      title: "Worldpay Solutions",
+      title: "Global Market Insights",
       description:
-        "Duis aute irure dolor in velit onerepreh enderit in voluptate more esse.",
+        "We provide in-depth analysis of global financial trends, empowering you to make informed decisions with confidence.",
     },
     {
       icon: <FaLightbulb size={40} />,
-      title: "Innovative Fintech",
+      title: "Innovative Research Tools",
       description:
-        "Duis aute irure dolor in velit onerepreh enderit in voluptate more esse.",
+        "Leveraging advanced analytics and fintech innovation, we deliver cutting-edge financial solutions to our clients.",
     },
   ];
 
@@ -54,23 +54,27 @@ function Market() {
       <div className="flex justify-center items-center">
         <div ref={contentRef} className="text-center max-w-3xl">
           <h4 className="text-xl font-bold bg-gray-800 text-white w-max mx-auto px-4 py-1 rounded-2xl mb-4">
-            About us
+            Why Choose Us
           </h4>
           <h3 className="text-xl md:text-3xl font-semibold bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-8">
-            We are the best in Market
+            We Lead the Market with Trust and Innovation
           </h3>
+          <p className="text-gray-600 text-sm md:text-base">
+            At <strong>WealtStock Research Firm</strong>, we combine expert knowledge, global reach, and fintech
+            innovation to deliver world-class financial strategies tailored to your goals.
+          </p>
         </div>
       </div>
 
       {/* Cards */}
-      <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto mt-8 px-4">
+      <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto mt-12 px-4">
         {cardData.map((card, index) => (
           <div
             key={index}
             ref={(el) => (cardsRef.current[index] = el)}
             className="bg-white p-6 rounded-3xl shadow-xl transform transition duration-300 hover:scale-105 hover:bg-gradient-to-r hover:from-blue-100 hover:via-purple-100 hover:to-pink-100"
           >
-            <div className="flex items-center justify-center mb-4 text-gradient-to-r from-purple-600 to-pink-500 text-3xl text-blue-600">
+            <div className="flex items-center justify-center mb-4">
               <div className="p-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg">
                 {card.icon}
               </div>
@@ -81,7 +85,7 @@ function Market() {
             <p className="text-gray-600 text-center mb-4">{card.description}</p>
             <div className="text-center">
               <button className="text-sm font-medium bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition">
-                Discover More &gt;
+                Learn More &gt;
               </button>
             </div>
           </div>

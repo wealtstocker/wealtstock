@@ -1,86 +1,92 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
+import axiosInstance from "../../../api/axiosInstance";
 
-const BankDetailsModal = ({ isOpen, onClose, onSubmit }) => {
-  const [form, setForm] = useState({
-    bankName: '',
-    accountNumber: '',
-    confirmAccount: '',
-    ifsc: '',
+const BankDetailsModal = ({ isOpen, onClose, initialData, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    account_holder_name: "",
+    bank_name: "",
+    ifsc_code: "",
+    account_number: "",
   });
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    } else {
+      setFormData({
+        account_holder_name: "",
+        bank_name: "",
+        ifsc_code: "",
+        account_number: "",
+      });
+    }
+  }, [initialData]);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
-    if (form.accountNumber !== form.confirmAccount) {
-      alert('Account numbers do not match.');
-      return;
+  const handleSubmit = async () => {
+    try {
+      if (initialData) {
+        await axiosInstance.put(`/customer/update-bank/${initialData.id}`, formData);
+      } else {
+        await axiosInstance.post("/customer/add-bank", formData);
+      }
+      onSuccess();
+      onClose();
+    } catch (err) {
+      console.error("❌ Error saving bank:", err);
     }
-    onSubmit(form);
-    onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-xl">
-        <h2 className="text-xl font-semibold text-blue-600 mb-4">Add Bank Account</h2>
+    <div className="fixed inset-0 bg-[whitesmoke] bg-opacity-30 flex justify-center items-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
+        <h2 className="text-lg font-bold mb-4">
+          {initialData ? "Edit Bank Details" : "Add Bank Details"}
+        </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Bank Full Name</label>
-            <input
-              type="text"
-              name="bankName"
-              className="w-full border rounded px-3 py-2"
-              value={form.bankName}
-              onChange={handleChange}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Account Number</label>
-            <input
-              type="password"
-              name="accountNumber"
-              className="w-full border rounded px-3 py-2"
-              value={form.accountNumber}
-              onChange={handleChange}
-            />
-          </div>
+        <input
+          type="text"
+          name="account_holder_name"
+          placeholder="Account Holder Name"
+          className="w-full border p-2 mb-2 rounded"
+          value={formData.account_holder_name}
+          onChange={handleChange}
+        />
+        <input
+          type="text"
+          name="bank_name"
+          placeholder="Bank Name"
+          className="w-full border p-2 mb-2 rounded"
+          value={formData.bank_name}
+          onChange={handleChange}
+        />
+        <input
+          type="text"
+          name="ifsc_code"
+          placeholder="IFSC Code"
+          className="w-full border p-2 mb-2 rounded"
+          value={formData.ifsc_code}
+          onChange={handleChange}
+        />
+        <input
+          type="text"
+          name="account_number"
+          placeholder="Account Number"
+          className="w-full border p-2 mb-4 rounded"
+          value={formData.account_number}
+          onChange={handleChange}
+        />
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Confirm Account Number</label>
-            <input
-              type="text"
-              name="confirmAccount"
-              className="w-full border rounded px-3 py-2"
-              value={form.confirmAccount}
-              onChange={handleChange}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">IFSC Code</label>
-            <input
-              type="text"
-              name="ifsc"
-              className="w-full border rounded px-3 py-2"
-              value={form.ifsc}
-              onChange={handleChange}
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">
+        <div className="flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-400 text-white rounded">
             Cancel
           </button>
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Submit
+          <button onClick={handleSubmit} className="px-4 py-2 bg-blue-600 text-white rounded">
+            Save
           </button>
         </div>
       </div>

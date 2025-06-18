@@ -35,7 +35,7 @@ const Footer = () => {
           <div className="flex items-center gap-3">
             <FaBuilding className="text-4xl text-yellow-400 drop-shadow-lg" />
             <h2 className="text-xl font-bold tracking-wide">
-              Global-ResearchFirm
+              WealtStock Research Firm
             </h2>
           </div>
           <p className="text-sm text-gray-200">
@@ -97,7 +97,7 @@ const Footer = () => {
           </div>
           <div className="flex items-center gap-3">
             <FaEnvelope className="text-red-400 text-lg drop-shadow" />
-            <span>globalrearchfirm@gmail.com</span>
+            <span>wealtstockresearchfirm@gmail.com</span>
           </div>
         </div>
 
@@ -116,9 +116,9 @@ const Footer = () => {
 
       {/* Copyright */}
       <div className="text-center mt-10 text-gray-300 text-sm border-t border-gray-700 pt-6">
-        Copyright ©2025 All rights reserved |{" "}
-        <span className="text-white font-medium">Global-ResearchFirm</span>
+        © 2025 All rights reserved | <span className="text-white font-medium">WealtStock Research Firm</span>
       </div>
+
     </footer>
   );
 };

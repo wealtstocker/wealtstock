@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 
-// Replace with actual image imports
+// Image imports
 import acc1 from "../../assets/services/acc1.jpg";
 import acc2 from "../../assets/services/acc2.jpg";
 import acc3 from "../../assets/services/acc3.jpg";
@@ -15,79 +15,80 @@ import investing3 from "../../assets/services/investing3.jpg";
 import mobile1 from "../../assets/services/mobile1.jpg";
 import mobile2 from "../../assets/services/mobile2.jpg";
 
+// Category data tailored for WealtStock Research Firm
 const categories = {
-  Investing: [
+  "Strategic Investing": [
     {
       image: investing1,
-      title: "Financial Statements",
-      desc: "Retirement Planning Strategies",
+      title: "Portfolio Diversification",
+      desc: "Maximize long-term returns through diversified asset strategies.",
     },
     {
       image: investing2,
-      title: "Economic Indicators",
-      desc: "Tax Optimization Solutions",
+      title: "Market Forecast Reports",
+      desc: "Stay ahead with expert insights and predictive analysis.",
     },
     {
       image: investing3,
-      title: "Earnings Reports",
-      desc: "Business Succession Planning",
+      title: "Wealth Planning",
+      desc: "Tailored investment planning aligned with your financial goals.",
     },
   ],
-  "Analysis Tools": [
+  "Advanced Analysis": [
     {
       image: analysis1,
-      title: "Candlestick Charts",
-      desc: "Analyzing price movements using candlestick patterns.",
+      title: "Candlestick Interpretation",
+      desc: "Decode price actions and make confident entry-exit decisions.",
     },
     {
       image: analysis2,
       title: "Relative Strength Index (RSI)",
-      desc: "Measuring strength of price movements.",
+      desc: "Identify overbought and oversold market signals.",
     },
     {
       image: analysis3,
       title: "Moving Averages",
-      desc: "Identifying trends by smoothing out price data.",
+      desc: "Track trends and confirm market momentum effectively.",
     },
     {
       image: analysis4,
       title: "Bollinger Bands",
-      desc: "Measuring volatility and identifying trend reversals.",
+      desc: "Measure market volatility and spot trend reversals.",
     },
   ],
-  "Mobile Trading": [
+  "Mobile Trading Tools": [
     {
       image: mobile1,
-      title: "Research Reports",
-      desc: "Detailed research reports from financial analysts.",
+      title: "Research Dashboard",
+      desc: "Access real-time analytics and market insights anytime.",
     },
     {
       image: mobile2,
-      title: "Trading Signals",
-      desc: "Algorithm-generated buy and sell signals.",
+      title: "Smart Trade Alerts",
+      desc: "Leverage AI-powered signals for optimal trade timing.",
     },
   ],
-  "Acc. Management": [
+  "Account Management": [
     {
       image: acc1,
-      title: "Made Financial Planning",
-      desc: "Retirement Planning Strategies",
+      title: "Tailored Financial Plans",
+      desc: "Custom roadmaps for retirement, tax, and business goals.",
     },
     {
       image: acc2,
-      title: "Risk Management Tools",
-      desc: "Position sizing calculators.",
+      title: "Risk Allocation Models",
+      desc: "Safeguard capital with strategic exposure controls.",
     },
     {
       image: acc3,
-      title: "Backtesting Tools",
-      desc: "Testing Tools for trading by historical data.",
+      title: "Historical Backtesting",
+      desc: "Validate strategies using performance-based simulations.",
     },
   ],
 };
 
 const CategoryCards = () => {
-  const [selectedCategory, setSelectedCategory] = useState("Investing");
+  const [selectedCategory, setSelectedCategory] = useState("Strategic Investing");
   const cardsRef = useRef([]);
 
   useEffect(() => {
@@ -107,21 +108,25 @@ const CategoryCards = () => {
   return (
     <section className="px-4 py-16 bg-white">
       <div className="text-center mb-10">
-        <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-red-600  via-purple-400 to-pink-500 text-transparent bg-clip-text ">
-          <span className="uppercase">Our Services</span>
+        <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-red-600 via-purple-400 to-pink-500 text-transparent bg-clip-text uppercase">
+          Our Services
         </h2>
+        <p className="text-gray-600 mt-4 max-w-2xl mx-auto text-sm md:text-base">
+          Explore how <strong>WealtStock Research Firm</strong> empowers your financial journey with powerful tools, research, and strategic insights.
+        </p>
 
-        <div className="flex flex-wrap justify-center gap-4 mt-6">
+        {/* Category Tabs */}
+        <div className="flex flex-wrap justify-center gap-4 mt-8">
           {Object.keys(categories).map((category) => (
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-5 py-2 rounded-full font-medium transition-all duration-300
-      ${
-        selectedCategory === category
-          ? "bg-gradient-to-r from-blue-800   via-purple-500 to-pink-500 text-transparent bg-clip-text shadow-xl"
-          : "bg-gradient-to-r from-red-600  via-purple-500 to-pink-500 text-transparent bg-clip-text"
-      }`}
+              className={`px-5 py-2 rounded-full font-medium transition-all duration-300 border
+                ${
+                  selectedCategory === category
+                    ? "bg-gradient-to-r from-blue-800 via-purple-500 to-pink-500 text-white shadow-lg"
+                    : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                }`}
             >
               {category}
             </button>
@@ -129,12 +134,13 @@ const CategoryCards = () => {
         </div>
       </div>
 
+      {/* Cards Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 max-w-7xl mx-auto">
         {categories[selectedCategory].map((card, index) => (
           <div
             key={index}
             ref={(el) => (cardsRef.current[index] = el)}
-            className="bg-white rounded-lg shadow-md overflow-hidden transform transition-transform duration-500 cursor-pointer"
+            className="bg-white rounded-xl shadow-md overflow-hidden transform transition-transform duration-500 hover:scale-105"
           >
             <div className="overflow-hidden">
               <img

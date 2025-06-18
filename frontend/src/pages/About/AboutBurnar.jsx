@@ -28,14 +28,15 @@ const AboutUs = () => {
       <div className="flex justify-center items-center px-4 py-16 md:py-24">
         <div ref={contentRef} className="text-center max-w-3xl">
           <h4 className="text-xl md:text-xl font-bold bg-gray-800 text-white w-max mx-auto px-4 py-1 rounded-2xl mb-4">
-            About us
+            About Us
           </h4>
           <h3 className="text-xl md:text-3xl font-semibold bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-4">
-            Reimagining the power of Finance Service
+            Empowering Financial Growth with WealtStock Research Firm
           </h3>
           <p className="text-gray-600 text-sm md:text-base">
-            Establish your vision and value proposition and turn them into
-            testable prototypes.
+            At <strong>WealtStock Research Firm</strong>, we redefine financial strategy by offering
+            research-driven insights and tailored investment solutions. Our mission is to empower individuals and
+            businesses to achieve long-term wealth through innovation, trust, and expertise.
           </p>
         </div>
       </div>

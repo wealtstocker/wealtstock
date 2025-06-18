@@ -1,7 +1,7 @@
 
 import pool from "../config/db.js";
 
-// ✅ Add Fund Request
+
 export async function addFundRequest(req, res) {
   const customerId = req.user.id;
   const { amount, method, utr_number, note } = req.body;
@@ -29,6 +29,32 @@ export async function addFundRequest(req, res) {
   }
 }
 
+// controllers/walletNtransactionController.js
+export const getMyFundRequests = async (req, res) => {
+  const customerId = req.user.id;
+
+  try {
+    const [pending] = await pool.query(`
+      SELECT * FROM add_funds 
+      WHERE customer_id = ? AND status = 'pending' AND is_active = TRUE
+      ORDER BY created_at DESC
+    `, [customerId]);
+
+    const [completed] = await pool.query(`
+      SELECT * FROM add_funds 
+      WHERE customer_id = ? AND status = 'successful' AND is_active = TRUE
+      ORDER BY created_at DESC
+    `, [customerId]);
+
+    return res.status(200).json({
+      pending,
+      completed,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching fund requests:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 // ✅ User Withdrawal Request
 export async function requestWithdrawal(req, res) {
@@ -149,12 +175,7 @@ export const getAllTransactions = async (req, res) => {
 
 export async function getAllFundRequests(req, res) {
   try {
-    const [rows] = await pool.query(
-      `SELECT f.*, u.full_name, u.email 
-       FROM add_funds f
-       JOIN users u ON f.customer_id = u.uuid
-       ORDER BY f.created_at DESC`
-    );
+   const [rows] = await pool.query(`SELECT * FROM add_funds ORDER BY created_at DESC`);
 
     res.status(200).json({
       message: "All fund requests fetched",
@@ -166,6 +187,45 @@ export async function getAllFundRequests(req, res) {
   }
 }
 
+
+export async function getApprovedFundRequests(req, res) {
+  try {
+    const [rows] = await pool.query(
+      `SELECT f.*, u.full_name, u.email 
+       FROM add_funds f
+       JOIN users u ON f.customer_id = u.uuid
+       WHERE f.status = 'successful'
+       ORDER BY f.created_at DESC`
+    );
+
+    res.status(200).json({
+      message: "Approved fund requests fetched",
+      data: rows,
+    });
+  } catch (err) {
+    console.error("❌ Approved fund fetch error:", err.message);
+    res.status(500).json({ message: "Failed to fetch approved fund requests" });
+  }
+}
+export async function getPendingFundRequests(req, res) {
+  try {
+    const [rows] = await pool.query(
+      `SELECT f.*, u.full_name, u.email 
+       FROM add_funds f
+       JOIN users u ON f.customer_id = u.uuid
+       WHERE f.status = 'pending'
+       ORDER BY f.created_at DESC`
+    );
+
+    res.status(200).json({
+      message: "Pending fund requests fetched",
+      data: rows,
+    });
+  } catch (err) {
+    console.error("❌ Pending fund fetch error:", err.message);
+    res.status(500).json({ message: "Failed to fetch pending fund requests" });
+  }
+}
 
 // ✅ Admin Approves Fund Request
 export async function approveFundRequest(req, res) {

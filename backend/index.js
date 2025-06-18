@@ -4,12 +4,13 @@ dotenv.config();
 import app from "./app.js";
 import pool from "./config/db.js";
 
-const PORT = process.env.PORT || 8001;
+const PORT = process.env.PORT || 6000;
 
 async function startServer() {
   try {
     await pool.getConnection();
     console.log("MySQL DB connected ✅");
+
     app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);
     });

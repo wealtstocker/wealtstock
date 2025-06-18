@@ -24,7 +24,7 @@ const DashboardLayout = () => {
           onMenuClick={handleSidebarToggle}
           isSidebarOpen={isSidebarOpen}
         />
-        <main className="pt-16 min-h-screen">
+        <main className="pt-16 mt-3 min-h-screen">
           <BreadcrumbNav />
           <Outlet />
         </main>

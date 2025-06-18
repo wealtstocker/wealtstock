@@ -7,6 +7,7 @@ import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import walletNtransactionRoutes from "./routes/walletNtransactionRoutes.js";
 import tradeRoutes from "./routes/tradeRoutes.js";
+import siteConfigRoutes from "./routes/siteConfigRoutes.js";
 
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./swaggerSpec.js";
@@ -17,7 +18,7 @@ const app = express();
 // CORS middleware
 app.use(
   cors({
-    origin: "https://wealtstockresearchfirm.com/",
+    origin: "http://localhost:5174",
     credentials: true,
   })
 );
@@ -34,12 +35,12 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/customer", customersRouter);
 app.use("/uploads", express.static("uploads"));
-
-// Wallet and trade routes
+app.use("/uploads/site", express.static("uploads/site"));
+app.use("/api/site-config", siteConfigRoutes);
 app.use("/api/wallet", walletNtransactionRoutes);
 app.use("/api/trade", tradeRoutes);
 
-app.get("/api/welcome", (req, res) => {
+app.get("/", (req, res) => {
   res.send("Welcome to Role-Based Auth API (MySQL + Node.js)");
 });
 

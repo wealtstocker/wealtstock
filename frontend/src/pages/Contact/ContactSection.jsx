@@ -45,25 +45,25 @@ const ContactSection = () => {
         ref={headingRef}
         className="text-3xl md:text-4xl font-bold text-center mb-12 bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 text-transparent bg-clip-text"
       >
-        Contact Information
+        Contact WealtStock Research Firm
       </h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
-        {/* Get in Touch Box */}
+        {/* Contact Info Box */}
         <div
           ref={boxRef}
           className="bg-white p-6 rounded-xl shadow-md flex flex-col justify-center"
         >
-          <h3 className="text-xl font-semibold text-blue-700 mb-2">Get in touch</h3>
+          <h3 className="text-xl font-semibold text-blue-700 mb-2">Get in Touch</h3>
           <p className="text-gray-600 mb-2">
-            We will get back to you within 24 hours, or call us everyday
+            Our support team is available Monday to Saturday to assist you.
           </p>
-          <p className="text-gray-700 mb-2">10AM - 6PM, Mon - Sat</p>
+          <p className="text-gray-700 mb-2">Working Hours: 10:00 AM - 6:00 PM (Mon - Sat)</p>
           <p className="text-gray-800 font-semibold mb-1">📞 +91-9755320099</p>
-          <p className="text-gray-800 mb-1">📧 globalrearchfirm@gmail.com</p>
+          <p className="text-gray-800 mb-1">📧 wealtstockresearchfirm@gmail.com</p>
           <p className="text-gray-600 text-sm mt-2">
-            🏢 PLOT NO:72/C, Jaydev Vihar, Near GIET Office, Opposite Utkal Villas,
-            Bhubaneswar, Odisha, 0751013
+            🏢 Plot No: 72/C, Jaydev Vihar, Near GIET Office, Opp. Utkal Villas,
+            Bhubaneswar, Odisha – 751013
           </p>
         </div>
 
@@ -99,33 +99,34 @@ const ContactSection = () => {
         </div>
       </div>
 
-      {/* Info Cards in New Line */}
+      {/* Info Cards */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto mt-12">
         <div
           ref={(el) => (cardsRef.current[0] = el)}
           className="bg-white p-5 rounded-lg shadow-md flex flex-col items-center text-center"
         >
           <FaMapMarkerAlt className="text-blue-600 text-3xl mb-3" />
-          <h4 className="text-lg font-semibold mb-1">Our Location</h4>
-          <p className="text-gray-600 text-sm">1901 Thornridge Cir. Shiloh, Hawaii 81063</p>
+          <h4 className="text-lg font-semibold mb-1">Our Office</h4>
+          <p className="text-gray-600 text-sm">
+            Plot No: 72/C, Jaydev Vihar, Bhubaneswar, Odisha – 751013
+          </p>
         </div>
         <div
           ref={(el) => (cardsRef.current[1] = el)}
           className="bg-white p-5 rounded-lg shadow-md flex flex-col items-center text-center"
         >
           <FaEnvelope className="text-blue-600 text-3xl mb-3" />
-          <h4 className="text-lg font-semibold mb-1">Email Address</h4>
-          <p className="text-gray-600 text-sm">contact@example.com</p>
-          <p className="text-gray-600 text-sm">support@example.com</p>
+          <h4 className="text-lg font-semibold mb-1">Email Us</h4>
+          <p className="text-gray-600 text-sm">wealtstockresearchfirm@gmail.com</p>
         </div>
         <div
           ref={(el) => (cardsRef.current[2] = el)}
           className="bg-white p-5 rounded-lg shadow-md flex flex-col items-center text-center"
         >
           <FaPhoneAlt className="text-blue-600 text-3xl mb-3" />
-          <h4 className="text-lg font-semibold mb-1">Phone Number</h4>
-          <p className="text-gray-600 text-sm">Emergency Cases</p>
-          <p className="text-gray-800 font-medium">+(208) 555-0112 (24/7)</p>
+          <h4 className="text-lg font-semibold mb-1">Call Us</h4>
+          <p className="text-gray-600 text-sm">General Enquiry & Support</p>
+          <p className="text-gray-800 font-medium">+91-9755320099</p>
         </div>
       </div>
     </section>

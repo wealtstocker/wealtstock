@@ -35,6 +35,7 @@ export async function updateCustomer(req, res) {
     account_type,
     city,
     address,
+     is_active,
   } = req.body;
 
   try {
@@ -42,7 +43,7 @@ export async function updateCustomer(req, res) {
       `UPDATE customers SET 
         full_name = ?, email = ?, phone_number = ?, gender = ?, dob = ?, 
         aadhar_number = ?, pan_number = ?, state = ?, account_type = ?, 
-        city = ?, address = ?
+        city = ?, address = ?, is_active = ?
       WHERE id = ?`,
       [
         full_name,
@@ -57,13 +58,15 @@ export async function updateCustomer(req, res) {
         city,
         address,
         id,
+         is_active
       ]
     );
-    res.json({ status: true, message: "Customer updated successfully" });
+    res.json({ status: true, message: 'Customer updated successfully' });
   } catch (err) {
-    res.status(500).json({ status: false, message: "Error updating customer", error: err.message });
+    res.status(500).json({ status: false, message: 'Error updating customer', error: err.message });
   }
 }
+
 
 export async function deleteCustomer(req, res) {
   const { id } = req.params;
@@ -108,20 +111,21 @@ export async function changePassword(req, res) {
   }
 }
 
+// 📁 Backend (controllers/bankController.js)
+
+
 export async function addBankAccount(req, res) {
   const customerId = req.user.id;
-  const {
-     account_holder_name, bank_name,
-    ifsc_code, account_number
-  } = req.body;
-
-  console.log("*************", account_holder_name, account_number);
+  const { account_holder_name, bank_name, ifsc_code, account_number } = req.body;
 
   try {
+    const [existing] = await pool.query(`SELECT * FROM customer_bank_accounts WHERE customer_id = ?`, [customerId]);
+    if (existing.length > 0) {
+      return res.status(400).json({ message: "Bank account already exists. Use update instead." });
+    }
+
     await pool.query(
-      `INSERT INTO customer_bank_accounts 
-      (customer_id,  account_holder_name, bank_name, ifsc_code, account_number)
-      VALUES (?, ?, ?, ?, ?)`, // ✅ 6 placeholders
+      `INSERT INTO customer_bank_accounts (customer_id, account_holder_name, bank_name, ifsc_code, account_number) VALUES (?, ?, ?, ?, ?)`,
       [customerId, account_holder_name, bank_name, ifsc_code, account_number]
     );
 
@@ -134,17 +138,12 @@ export async function addBankAccount(req, res) {
 export async function updateBankAccount(req, res) {
   const customerId = req.user.id;
   const bankId = req.params.bankId;
-  const {
-    account_type, account_holder_name, bank_name,
-    ifsc_code, account_number
-  } = req.body;
+  const { account_holder_name, bank_name, ifsc_code, account_number } = req.body;
 
   try {
     const [result] = await pool.query(
-      `UPDATE customer_bank_accounts
-       SET account_type = ?, account_holder_name = ?, bank_name = ?, ifsc_code = ?, account_number = ?
-       WHERE id = ? AND customer_id = ?`,  // ✅ Removed extra comma
-      [account_type, account_holder_name, bank_name, ifsc_code, account_number, bankId, customerId]
+      `UPDATE customer_bank_accounts SET account_holder_name = ?, bank_name = ?, ifsc_code = ?, account_number = ? WHERE id = ? AND customer_id = ?`,
+      [account_holder_name, bank_name, ifsc_code, account_number, bankId, customerId]
     );
 
     if (result.affectedRows === 0) {
@@ -156,3 +155,27 @@ export async function updateBankAccount(req, res) {
     res.status(500).json({ message: "❌ Error updating account", error: err.message });
   }
 }
+
+export async function BankAccount(req, res) {
+  const customerId = req.user?.id;
+
+  if (!customerId) {
+    return res.status(401).json({ message: "Unauthorized: Customer not found in token" });
+  }
+
+  try {
+    const [accounts] = await pool.query(
+      `SELECT id, account_holder_name, bank_name, ifsc_code, account_number, is_primary, is_verified, created_at, updated_at FROM customer_bank_accounts WHERE customer_id = ? ORDER BY is_primary DESC, created_at DESC`,
+      [customerId]
+    );
+
+    if (accounts.length === 0) {
+      return res.status(404).json({ message: "No bank accounts found for this customer." });
+    }
+
+    res.json({ banks: accounts });
+  } catch (error) {
+    res.status(500).json({ message: "Server error while fetching bank accounts.", error: error.message });
+  }
+}
+

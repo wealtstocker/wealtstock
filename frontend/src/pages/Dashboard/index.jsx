@@ -1,34 +1,68 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FaWallet, FaChartLine, FaUserTie, FaCoins } from 'react-icons/fa';
 import { BsBank } from 'react-icons/bs';
 import { CheckCircle2, Globe, BarChart, Settings, HelpCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchApprovedTrades, fetchWalletBalance, fetchWalletHistory } from '../../redux/Slices/walletSlice';
+import { fetchCustomerById } from '../../redux/Slices/customerSlice';
+import { motion } from 'framer-motion';
 
 const DashboardPage = () => {
+  const dispatch = useDispatch();
+  const { balance, approvedTrades, walletHistory } = useSelector((state) => state.wallet);
+  const { data: customer, loading: customerLoading } = useSelector((state) => state.customer);
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user?.id) {
+      dispatch(fetchCustomerById(user.id));
+    }
+    dispatch(fetchApprovedTrades());
+    dispatch(fetchWalletBalance());
+    dispatch(fetchWalletHistory());
+  }, [dispatch]);
+
+  // Loading check
+  const isLoading = customerLoading || !walletHistory || balance === null;
+
+  // Calculations
+  const creditAmount =
+    walletHistory?.filter((tx) => tx.type === 'credit')?.reduce((acc, tx) => acc + Number(tx.amount), 0) || 0;
+
+  const debitAmount =
+    walletHistory?.filter((tx) => tx.type === 'debit')?.reduce((acc, tx) => acc + Number(tx.amount), 0) || 0;
+
   const stats = [
     {
       label: 'Wallet Balance',
-      value: '₹12,500.00',
+      value: balance !== null ? `₹${Number(balance).toLocaleString()}` : 'Loading...',
       icon: <FaWallet className="text-blue-600 text-xl" />,
-      border: 'border-blue-500'
+      border: 'border-blue-500',
     },
     {
-      label: 'Open Positions',
-      value: '4',
+      label: 'Total Trades',
+      value: approvedTrades || 0,
       icon: <FaChartLine className="text-green-600 text-xl" />,
-      border: 'border-green-500'
+      border: 'border-green-500',
     },
     {
       label: 'Account Type',
-      value: 'Trading + Demat',
+      value: customer?.account_type || 'Loading...',
       icon: <FaUserTie className="text-indigo-600 text-xl" />,
-      border: 'border-indigo-500'
+      border: 'border-indigo-500',
     },
     {
       label: 'Total Earnings',
-      value: '₹6,820.00',
+      value: `₹${creditAmount.toLocaleString()}`,
       icon: <FaCoins className="text-yellow-500 text-xl" />,
-      border: 'border-yellow-500'
+      border: 'border-yellow-500',
+    },
+    {
+      label: 'Total Spent',
+      value: `₹${debitAmount.toLocaleString()}`,
+      icon: <FaCoins className="text-red-500 text-xl" />,
+      border: 'border-red-500',
     },
   ];
 
@@ -39,28 +73,46 @@ const DashboardPage = () => {
     { label: 'Approved', icon: <CheckCircle2 size={18} />, href: '/dashboard/payment-approved' },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="loader mb-4 mx-auto"></div>
+          <p className="text-gray-500">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4 py-3 bg-gray-50 min-h-screen">
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      className="p-4 py-3 bg-gray-50 min-h-screen"
+    >
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">👋 Welcome Back, Trader</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">
+            👋 Welcome Back, {customer?.full_name || 'Trader'}
+          </h1>
+          <p className="text-sm text-gray-500">
+            Account Type: <span className="font-medium text-gray-700">{customer?.account_type || 'N/A'}</span>
+          </p>
+        </div>
         <div className="flex gap-3">
-          <Link
-            to="/dashboard/settings"
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-indigo-600 transition"
-          >
+          <Link to="/dashboard/settings" className="flex items-center gap-2 text-sm text-gray-600 hover:text-indigo-600 transition">
             <Settings size={18} /> Settings
           </Link>
-          <Link
-            to="/support"
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-500 transition"
-          >
+          <Link to="/support" className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-500 transition">
             <HelpCircle size={18} /> Help
           </Link>
         </div>
       </div>
 
-      {/* Stats Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
         {stats.map((item, index) => (
           <div
             key={index}
@@ -94,7 +146,7 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Additional Info or Widgets */}
+      {/* Widgets */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-10">
         <div className="bg-white rounded-xl p-5 shadow">
           <h3 className="text-lg font-semibold text-gray-700 mb-2">📈 Market Trends</h3>
@@ -110,7 +162,36 @@ const DashboardPage = () => {
           </ul>
         </div>
       </div>
-    </div>
+
+      {/* Wallet History */}
+      <div className="bg-white rounded-xl p-5 shadow mt-10">
+        <h3 className="text-lg font-semibold text-gray-700 mb-3">📒 Recent Wallet History</h3>
+        <div className="overflow-auto">
+          <table className="min-w-full text-sm text-left text-gray-500">
+            <thead>
+              <tr className="bg-gray-100 text-gray-700">
+                <th className="py-2 px-4">Type</th>
+                <th className="py-2 px-4">Amount</th>
+                <th className="py-2 px-4">Balance</th>
+                <th className="py-2 px-4">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {walletHistory?.slice(0, 5).map((tx) => (
+                <tr key={tx.id} className="border-t hover:bg-gray-50">
+                  <td className={`py-2 px-4 font-medium ${tx.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                    {tx.type}
+                  </td>
+                  <td className="py-2 px-4">₹{Number(tx.amount).toLocaleString()}</td>
+                  <td className="py-2 px-4">₹{Number(tx.balance).toLocaleString()}</td>
+                  <td className="py-2 px-4">{new Date(tx.created_at).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 

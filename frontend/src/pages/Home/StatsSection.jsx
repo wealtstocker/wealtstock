@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 
 const stats = [
-  { label: 'Active Clients', end: 50, icon: <Users className="w-8 h-8 text-blue-600" /> },
+  { label: 'Active Clients', end: 450, icon: <Users className="w-8 h-8 text-blue-600" /> },
   { label: 'Social Media Reach', end: 89000, icon: <TrendingUp className="w-8 h-8 text-green-600" /> },
   { label: 'Investment Reports', end: 3, icon: <BookOpen className="w-8 h-8 text-purple-600" /> },
   { label: 'Market Talks', end: 8, icon: <Presentation className="w-8 h-8 text-yellow-600" /> },
@@ -87,7 +87,7 @@ const StatsSection = () => {
               <div className="mb-4">{stat.icon}</div>
               <p className="text-3xl font-bold text-blue-700">
                 <CountUp end={stat.end} />
-                {typeof stat.end === 'number' && stat.end >= 1000 ? '+' : ''}
+                {typeof stat.end === 'number' && stat.end >= 1000 ? '' : '+'}
               </p>
               <p className="text-sm mt-2 text-gray-600 font-medium">{stat.label}</p>
             </div>

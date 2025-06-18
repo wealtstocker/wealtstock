@@ -1,25 +1,18 @@
-import React, { useState, useEffect } from "react";
-import { Tabs, Spin, Empty } from "antd";
+import React, { useState, useEffect } from 'react';
+import { Tabs, Spin, Empty, Card } from 'antd';
 import {
-  FaWallet,
-  FaPlus,
-  FaArrowDown,
-  FaArrowUp,
-  FaTimesCircle,
-  FaCheckCircle,
-  FaHourglassHalf,
-  FaBug,
-} from "react-icons/fa";
-import { Card } from "@/components/ui/card";
-// import axiosInstance from "@/utils/axiosInstance";
+  FaWallet, FaPlus, FaArrowUp, FaArrowDown,
+  FaHourglassHalf, FaCheckCircle
+} from 'react-icons/fa';
+
+import axiosInstance from '../../../api/axiosInstance';
+
 
 const { TabPane } = Tabs;
 
 const DashboardCard = ({ icon, label, value, color }) => (
   <div className="flex items-center p-4 space-x-4 shadow-md rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700">
-    <div
-      className={`p-3 rounded-full bg-${color}-100 text-${color}-700 text-xl`}
-    >
+    <div className={`p-3 rounded-full bg-${color}-100 text-${color}-700 text-xl`}>
       {icon}
     </div>
     <div>
@@ -39,10 +32,11 @@ const PaymentHistory = ({ data }) => {
       {data.map((item, index) => (
         <Card key={index} className="p-4 flex justify-between items-center">
           <div>
-            <p className="text-lg font-medium">{item.type}</p>
-            <p className="text-sm text-gray-500">{item.date}</p>
+            <p className="text-lg font-medium">₹{item.amount}</p>
+            <p className="text-sm text-gray-500">{new Date(item.created_at).toLocaleString()}</p>
+            <p className="text-xs text-gray-400">{item.method} - {item.utr_number}</p>
           </div>
-          <div className={`text-${item.statusColor}-600 font-semibold`}>
+          <div className={`text-${item.status === 'successful' ? 'green' : 'yellow'}-600 font-semibold`}>
             {item.status}
           </div>
         </Card>
@@ -52,108 +46,95 @@ const PaymentHistory = ({ data }) => {
 };
 
 const PaymentPage = () => {
-  const [walletData, setWalletData] = useState({});
+  const [fundRequests, setFundRequests] = useState({ pending: [], completed: [] });
   const [loading, setLoading] = useState(true);
-  const [paymentRequests, setPaymentRequests] = useState({});
 
-  // useEffect(() => {
-  //     // Simulated fetch for example
-  //     const fetchData = async () => {
-  //         setLoading(true);
-  //         try {
-  //             const walletRes = await axiosInstance.get('/api/wallet/summary');
-  //             const requestsRes = await axiosInstance.get('/api/payment/requests');
-  //             setWalletData(walletRes.data);
-  //             setPaymentRequests(requestsRes.data);
-  //         } catch (err) {
-  //             console.error('Error fetching wallet data:', err);
-  //         }
-  //         setLoading(false);
-  //     };
+  useEffect(() => {
+    const fetchFundRequests = async () => {
+      setLoading(true);
+      try {
+        const res = await axiosInstance.get('/wallet/fund-requests');
+        setFundRequests({
+          pending: res.data.pending || [],
+          completed: res.data.completed || [],
+        });
+      } catch (error) {
+        console.error("❌ Error loading fund requests:", error);
+      }
+      setLoading(false);
+    };
 
-  //     fetchData();
-  // }, []);
+    fetchFundRequests();
+  }, []);
 
-  const statusMap = {
-    pending: {
-      title: "Pending",
-      icon: <FaHourglassHalf />,
-      color: "yellow",
-    },
-    approved: {
-      title: "Approved",
-      icon: <FaCheckCircle />,
-      color: "green",
-    },
-    cancelled: {
-      title: "Cancelled",
-      icon: <FaTimesCircle />,
-      color: "red",
-    },
-    failed: {
-      title: "Failed",
-      icon: <FaBug />,
-      color: "gray",
-    },
-  };
+  const totalAmount = (arr) => arr.reduce((acc, cur) => acc + parseFloat(cur.amount), 0);
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-semibold mb-4">My Wallet</h1>
+      <h1 className="text-2xl font-semibold mb-4">Fund Request Summary</h1>
 
       {loading ? (
         <div className="flex justify-center items-center min-h-[200px]">
           <Spin size="large" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           <DashboardCard
             icon={<FaWallet />}
-            label="Wallet Balance"
-            value={`₹${walletData.balance || 0}`}
+            label="Total Requests"
+            value={`₹${totalAmount([...fundRequests.pending, ...fundRequests.completed])}`}
             color="blue"
           />
           <DashboardCard
-            icon={<FaPlus />}
-            label="Add Funds"
-            value={`₹${walletData.funds_added || 0}`}
+            icon={<FaHourglassHalf />}
+            label="Pending Requests"
+            value={`₹${totalAmount(fundRequests.pending)}`}
+            color="yellow"
+          />
+          <DashboardCard
+            icon={<FaCheckCircle />}
+            label="Approved Requests"
+            value={`₹${totalAmount(fundRequests.completed)}`}
             color="green"
-          />
-          <DashboardCard
-            icon={<FaArrowUp />}
-            label="Winnings"
-            value={`₹${walletData.winning_amount || 0}`}
-            color="purple"
-          />
-          <DashboardCard
-            icon={<FaArrowDown />}
-            label="Withdrawals"
-            value={`₹${walletData.withdrawn || 0}`}
-            color="red"
           />
         </div>
       )}
 
       <Tabs defaultActiveKey="pending" type="card">
-        {Object.keys(statusMap).map((key) => (
-          <TabPane
-            tab={
-              <div className="flex items-center space-x-2">
-                {statusMap[key].icon}
-                <span>{statusMap[key].title}</span>
-              </div>
-            }
-            key={key}
-          >
-            {loading ? (
-              <div className="flex justify-center items-center min-h-[200px]">
-                <Spin />
-              </div>
-            ) : (
-              <PaymentHistory data={paymentRequests[key]} />
-            )}
-          </TabPane>
-        ))}
+        <TabPane
+          tab={
+            <div className="flex items-center space-x-2">
+              <FaHourglassHalf />
+              <span>Pending</span>
+            </div>
+          }
+          key="pending"
+        >
+          {loading ? (
+            <div className="flex justify-center items-center min-h-[200px]">
+              <Spin />
+            </div>
+          ) : (
+            <PaymentHistory data={fundRequests.pending} />
+          )}
+        </TabPane>
+        <TabPane
+          tab={
+            <div className="flex items-center space-x-2">
+              <FaCheckCircle />
+              <span>Approved</span>
+            </div>
+          }
+          key="completed"
+        >
+          {loading ? (
+            <div className="flex justify-center items-center min-h-[200px]">
+              <Spin />
+            </div>
+          ) : (
+            <PaymentHistory data={fundRequests.completed} />
+          )}
+        </TabPane>
       </Tabs>
     </div>
   );

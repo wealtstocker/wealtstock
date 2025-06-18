@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "www.api.wealtstockresearchfirm.com/api";
+const BASE_URL = "https://api.wealtstockresearchfirm.com/api";
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,

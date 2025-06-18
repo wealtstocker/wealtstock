@@ -56,7 +56,11 @@ const ExtendedRegisterForm = () => {
   const validateForm = () => {
     for (let key in formData) {
       if (!formData[key]) {
-        Swal.fire("Validation Error", `Please fill out the ${key.replace("_", " ")} field.`, "error");
+        Swal.fire(
+          "Validation Error",
+          `Please fill out the ${key.replace("_", " ")} field.`,
+          "error"
+        );
         return false;
       }
     }
@@ -65,7 +69,11 @@ const ExtendedRegisterForm = () => {
       return false;
     }
     if (!document) {
-      Swal.fire("Validation Error", "Please upload your Aadhar/PAN document.", "error");
+      Swal.fire(
+        "Validation Error",
+        "Please upload your Aadhar/PAN document.",
+        "error"
+      );
       return false;
     }
     return true;
@@ -74,9 +82,7 @@ const ExtendedRegisterForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
     setIsSubmitting(true);
-
     const form = new FormData();
     for (let key in formData) {
       form.append(key, formData[key]);
@@ -85,16 +91,16 @@ const ExtendedRegisterForm = () => {
 
     try {
       const res = await dispatch(registerCustomer(form)).unwrap();
-      console.log("response -------", res)
-       Swal.fire({
-             toast: true,
-             position: 'top-end',
-             icon: 'success',
-             title: res.data.message || 'Registered successfully',
-             showConfirmButton: false,
-             timer: 4000,
-             timerProgressBar: true,
-           });
+      console.log("response -------", res);
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: res.data.message || "Registered successfully",
+        showConfirmButton: false,
+        timer: 4000,
+        timerProgressBar: true,
+      });
       setFormData({
         full_name: "",
         email: "",
@@ -112,10 +118,14 @@ const ExtendedRegisterForm = () => {
         is_active: 1,
       });
       setDocument(null);
-      navigate("/login")
+      navigate("/login");
     } catch (err) {
-      console.error("axios error ", err)
-      Swal.fire("Error", err?.message || "Registration failed. Please try again.", "error");
+      console.error("axios error ", err);
+      Swal.fire(
+        "Error",
+        err?.message || "Registration failed. Please try again.",
+        "error"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -141,7 +151,11 @@ const ExtendedRegisterForm = () => {
             { name: "pan_number", label: "PAN Number", type: "text" },
             { name: "city", label: "City", type: "text" },
             { name: "password", label: "Password", type: "password" },
-            { name: "confirm_password", label: "Confirm Password", type: "password" },
+            {
+              name: "confirm_password",
+              label: "Confirm Password",
+              type: "password",
+            },
           ].map(({ name, label, type }) => (
             <div key={name}>
               <label className="block mb-1 font-medium">{label} *</label>
@@ -187,7 +201,9 @@ const ExtendedRegisterForm = () => {
           </div>
 
           <div>
-            <label className="block mb-1 font-medium">Select Account Type *</label>
+            <label className="block mb-1 font-medium">
+              Select Account Type *
+            </label>
             <select
               name="account_type"
               value={formData.account_type}
@@ -212,7 +228,9 @@ const ExtendedRegisterForm = () => {
           </div>
 
           <div>
-            <label className="block mb-1 font-medium">Upload Your Aadhar/PAN *</label>
+            <label className="block mb-1 font-medium">
+              Upload Your Aadhar/PAN *
+            </label>
             <input
               type="file"
               onChange={handleFileChange}
@@ -224,7 +242,9 @@ const ExtendedRegisterForm = () => {
             type="submit"
             disabled={isSubmitting}
             className={`w-full mt-4 text-white py-2 rounded-lg transition duration-300 ${
-              isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              isSubmitting
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
             {isSubmitting ? "Registering..." : "Register Now"}

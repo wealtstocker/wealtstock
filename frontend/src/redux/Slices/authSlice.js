@@ -50,6 +50,7 @@ export const registerCustomer = createAsyncThunk(
     try {
       const config = {
         headers: { "Content-Type": "multipart/form-data" },
+        withCredentials: true, // 👈 Add this
       };
       const response = await axiosInstance.post(
         "/auth/register",

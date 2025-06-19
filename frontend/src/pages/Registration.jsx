@@ -96,7 +96,7 @@ const ExtendedRegisterForm = () => {
         toast: true,
         position: "top-end",
         icon: "success",
-        title: res.data.message || "Registered successfully",
+        title: res.message || "Registered successfully",
         showConfirmButton: false,
         timer: 4000,
         timerProgressBar: true,

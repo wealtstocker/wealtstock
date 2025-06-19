@@ -110,7 +110,7 @@ export async function registerCustomer(req, res) {
     address,
     is_active,
   } = req.body;
-  console.log(req.body);
+  // console.log(req.body);
   const document_url = req.file?.path || null;
 
   if (password !== confirm_password) {

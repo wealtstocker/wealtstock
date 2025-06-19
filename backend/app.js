@@ -16,12 +16,20 @@ import customersRouter from "./routes/customerRouter.js";
 const app = express();
 app.use(helmet());
 // CORS middleware
+// app.use(
+//   cors({
+//     origin: [
+//       "https://wealtstockresearchfirm.com",
+//       "https://admin.wealtstockresearchfirm.com",
+
+//     ],
+//     credentials: true,
+//   })
+// );
+
 app.use(
   cors({
-    origin: [
-      "https://wealtstockresearchfirm.com",
-      "https://admin.wealtstockresearchfirm.com",
-    ],
+    origin: " http://localhost:5174",
     credentials: true,
   })
 );
@@ -46,5 +54,4 @@ app.use("/api/trade", tradeRoutes);
 app.get("/", (req, res) => {
   res.send("Welcome to Role-Based Auth API (MySQL + Node.js)");
 });
-
 export default app;

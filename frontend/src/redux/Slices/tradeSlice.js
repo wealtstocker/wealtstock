@@ -2,8 +2,8 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axiosInstance from '../../api/axiosInstance';
 
 export const fetchAllTrades = createAsyncThunk('trade/fetchAll', async () => {
-  const res = await axiosInstance.get('/trade');
-  return res.data;
+  const res = await axiosInstance.get('/trade/my');
+  return res.data.data;
 });
 
 export const fetchSingleTrade = createAsyncThunk('trade/fetchOne', async (id) => {

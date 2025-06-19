@@ -26,10 +26,10 @@ app.use(helmet());
 //     credentials: true,
 //   })
 // );
-
+console.log(process.env.USER_FRONTEND, process.env.ADMIN_FRONTEND,)
 app.use(
   cors({
-    origin: [process.env.VITE_USER_FRONTEND, process.env.VITE_ADMIN_FRONTEND],
+    origin: [process.env.USER_FRONTEND, process.env.ADMIN_FRONTEND, "*"],
     credentials: true,
   })
 );

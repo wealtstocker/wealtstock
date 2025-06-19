@@ -11,6 +11,7 @@ const TradeListPage = () => {
   const { all, loading } = useSelector((state) => state.trade);
   const [searchText, setSearchText] = useState('');
 
+  console.log(all)
   useEffect(() => {
     dispatch(fetchAllTrades());
   }, [dispatch]);

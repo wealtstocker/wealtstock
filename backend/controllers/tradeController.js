@@ -158,8 +158,9 @@ export const getAllTrades = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch trades" });
   }
 };
+
 export const getMyTrades = async (req, res) => {
-  customer_id = req.user.customer_id;
+  const customer_id =  req.user.id;
   try {
     const [rows] = await pool.query(
       "SELECT * FROM trades WHERE customer_id = ?  ORDER BY id DESC",

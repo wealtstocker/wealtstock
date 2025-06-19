@@ -16,15 +16,16 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 import ProfilePage from "./Profile";
+import toast from "../../Services/toast";
 
 const { TabPane } = Tabs;
 
 const SettingsPage = () => {
   const handleAvatarChange = (info) => {
     if (info.file.status === "done") {
-      message.success(`${info.file.name} uploaded successfully`);
+      toast.success(`${info.file.name} uploaded successfully`);
     } else if (info.file.status === "error") {
-      message.error(`${info.file.name} upload failed.`);
+      toast.error(`${info.file.name} upload failed.`);
     }
   };
 

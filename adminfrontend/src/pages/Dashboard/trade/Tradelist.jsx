@@ -1,6 +1,14 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Table, Button, Tag, Space, Spin, Tooltip } from 'antd';
+import {
+  Table,
+  Button,
+  Tag,
+  Space,
+  Spin,
+  Tooltip,
+  Empty,
+} from 'antd';
 import {
   EyeOutlined,
   EditOutlined,
@@ -8,36 +16,57 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { approveTrade, fetchAllTrades } from '../../../redux/Slices/tradeSlice';
+import {
+  approveTrade,
+  fetchAllTrades,
+} from '../../../redux/Slices/tradeSlice';
+import { fetchAllCustomers } from '../../../redux/Slices/customerSlice';
 
 const TradeList = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
   const { all: trades, loading } = useSelector((state) => state.trade);
+  const { all: customers } = useSelector((state) => state.customer);
 
   useEffect(() => {
     dispatch(fetchAllTrades());
+    dispatch(fetchAllCustomers());
   }, [dispatch]);
 
   const handleApprove = (id) => {
     dispatch(approveTrade(id));
   };
 
+  const getCustomerName = (id) => {
+    const customer = customers.find((c) => c.id === id);
+    return customer ? customer.full_name : 'Unknown';
+  };
+
   const columns = [
     {
-      title: 'Trade Number',
+      title: 'Trade No.',
       dataIndex: 'trade_number',
       key: 'trade_number',
+      responsive: ['sm'],
     },
     {
-      title: 'Customer ID',
-      dataIndex: 'customer_id',
-      key: 'customer_id',
+      title: 'Customer',
+      key: 'customer',
+      render: (record) => (
+        <div>
+          <div className="font-medium text-indigo-700">
+            {getCustomerName(record.customer_id)}
+          </div>
+          <div className="text-sm text-gray-500">ID: {record.customer_id}</div>
+        </div>
+      ),
     },
     {
       title: 'Instrument',
       dataIndex: 'instrument',
       key: 'instrument',
+      responsive: ['md'],
     },
     {
       title: 'Status',
@@ -63,7 +92,7 @@ const TradeList = () => {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
-        <Space>
+        <Space wrap>
           <Tooltip title="View Trade">
             <Button
               type="default"
@@ -98,9 +127,9 @@ const TradeList = () => {
   ];
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">All Trades</h2>
+    <div className="p-4 space-y-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <h2 className="text-2xl font-bold text-indigo-700">All Trades</h2>
         <Button
           type="primary"
           icon={<PlusOutlined />}
@@ -111,22 +140,28 @@ const TradeList = () => {
       </div>
 
       {loading ? (
-        <div className="text-center py-10">
+        <div className="flex justify-center items-center py-20">
           <Spin size="large" />
         </div>
+      ) : trades.length === 0 ? (
+        <Empty description="No trades found" />
       ) : (
-        <Table
-          columns={columns}
-          dataSource={trades}
-          rowKey="id"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            pageSizeOptions: ['10', '20', '50', '100'],
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} of ${total} trades`,
-          }}
-        />
+        <div className="overflow-x-auto">
+          <Table
+            columns={columns}
+            dataSource={trades}
+            rowKey="id"
+            bordered
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} of ${total} trades`,
+            }}
+            className="min-w-[600px] sm:min-w-full"
+          />
+        </div>
       )}
     </div>
   );

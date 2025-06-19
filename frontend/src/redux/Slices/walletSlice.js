@@ -4,7 +4,7 @@ import axiosInstance from "../../api/axiosInstance";
 
 export const fetchWalletBalance = createAsyncThunk("wallet/fetchBalance", async () => {
   const res = await axiosInstance.get("/wallet/balance");
-  return res.data.balance;
+  return res.data.data;
 });
 
 export const fetchApprovedTrades = createAsyncThunk("wallet/fetchApprovedTrades", async () => {

@@ -14,6 +14,22 @@ const DashboardHeader = ({ onMenuClick, isSidebarOpen }) => {
   const [showDropdown, setShowDropdown] = useState(false);
 
   const { balance, loading } = useSelector((state) => state.wallet);
+const [user, setUser] = useState(null);
+
+// Get user data from localStorage on component mount
+useEffect(() => {
+  const storedUser = localStorage.getItem("user");
+  if (storedUser) {
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+      setUser(null);
+    }
+  }
+}, []);
+
 
   useEffect(() => {
     dispatch(fetchWalletBalance()); 
@@ -59,7 +75,9 @@ const DashboardHeader = ({ onMenuClick, isSidebarOpen }) => {
               onClick={onMenuClick}
             />
           )}
-          <h2 className="text-lg md:text-xl font-semibold">Admin Dashboard</h2>
+        <h2 className="text-lg md:text-xl font-semibold">
+  Welcome {user?.full_name ? user.full_name : ""}
+</h2>
         </div>
 
         <div className="flex items-center gap-6 relative">

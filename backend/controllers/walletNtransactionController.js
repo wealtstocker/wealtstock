@@ -113,8 +113,9 @@ export async function checkBalance(req, res) {
       "SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1",
       [customerId]
     );
-    if (!wallet) return res.status(404).json({ message: "No wallet found" });
-    res.json({ balance: wallet.balance });
+    if (!wallet) return res.status(200).json({ message: "No wallet found",data:0 });
+    res.status(200).json({message:'balance fetched',data:wallet.balance})
+    // res.json({ balance: wallet.balance });
   } catch (err) {
     res.status(500).json({ message: "Balance fetch error", error: err.message });
   }

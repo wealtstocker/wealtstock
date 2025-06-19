@@ -8,13 +8,14 @@ import {
   Space,
   Popconfirm,
   Modal,
-  message,
+
 } from 'antd';
 import { SearchOutlined, EyeOutlined } from '@ant-design/icons';
 import {
   fetchAllCustomers,
   updateCustomer,
 } from '../../../redux/Slices/customerSlice';
+import Toast from '../../../services/toast';
 
 const CustomerTable = () => {
   const dispatch = useDispatch();
@@ -47,7 +48,7 @@ const CustomerTable = () => {
         formData: { ...cust, is_active: !cust.is_active },
       })
     ).then(() => {
-      message.success(
+      Toast.success(
         `Customer ${cust.is_active ? 'deactivated' : 'activated'} successfully`
       );
       dispatch(fetchAllCustomers());
@@ -139,16 +140,20 @@ const CustomerTable = () => {
   );
 
   return (
-    <div className="p-6 bg-white rounded shadow-sm">
+    <div className="p-4 sm:p-6 bg-white rounded shadow-sm overflow-auto">
       <h2 className="text-xl font-semibold mb-4 text-blue-600">
         Customer Management
       </h2>
-      <Input
-        placeholder="Search by name"
-        prefix={<SearchOutlined />}
-        onChange={(e) => setSearchText(e.target.value)}
-        style={{ maxWidth: 300, marginBottom: 16 }}
-      />
+
+      <div className="mb-4">
+        <Input
+          placeholder="Search by name"
+          prefix={<SearchOutlined />}
+          onChange={(e) => setSearchText(e.target.value)}
+          className="w-full sm:w-80"
+        />
+      </div>
+
       <Table
         columns={columns}
         dataSource={filteredData.map((c) => ({ ...c, key: c.id }))}
@@ -156,6 +161,7 @@ const CustomerTable = () => {
         pagination={{ pageSize: 10 }}
         bordered
         size="middle"
+        scroll={{ x: 'max-content' }}
       />
 
       <Modal
@@ -163,9 +169,10 @@ const CustomerTable = () => {
         onCancel={() => setViewModal(false)}
         footer={null}
         title={<span className="font-bold text-lg">Customer Overview</span>}
+        className="max-w-full sm:max-w-lg"
       >
         {selectedCustomer && (
-          <div className="space-y-2">
+          <div className="text-sm sm:text-base space-y-2 break-words">
             <p><strong>ID:</strong> {selectedCustomer.id}</p>
             <p><strong>Full Name:</strong> {selectedCustomer.full_name}</p>
             <p><strong>Email:</strong> {selectedCustomer.email}</p>

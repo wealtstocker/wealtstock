@@ -7,6 +7,7 @@ import {
   createTrade,
   updateTrade,
 } from '../../../redux/Slices/tradeSlice';
+import Toast from '../../../services/toast';
 
 const TradeForm = () => {
   const [form] = Form.useForm();
@@ -33,10 +34,10 @@ const TradeForm = () => {
     try {
       if (isEdit) {
         await dispatch(updateTrade({ id, data: values })).unwrap();
-        message.success('Trade updated successfully');
+        Toast.success('Trade updated successfully');
       } else {
         await dispatch(createTrade({ ...values, created_by: 'admin' })).unwrap();
-        message.success('Trade created successfully');
+        Toast.success('Trade created successfully');
       }
       navigate('/admin/trades');
     } catch (err) {

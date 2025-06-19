@@ -7,23 +7,18 @@ import {
   Empty,
   Pagination,
   Select,
-  message,
+
 } from "antd";
-import axios from "axios";
 import {
   FaMoneyBillWave,
   FaWallet,
   FaArrowCircleUp,
   FaArrowCircleDown,
 } from "react-icons/fa";
-import {
-  MdPendingActions,
-  MdCancel,
-  MdCheckCircle,
-  MdError,
-} from "react-icons/md";
+
 import dayjs from "dayjs";
 import axiosInstance from "../../../api/axiosInstance";
+import toast from "../../Services/toast";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -59,8 +54,7 @@ const WalletPage = () => {
   const fetchWalletHistory = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get("/wallet/wallet-history"); 
-      console.log(res,"---")
+      const res = await axiosInstance.get("/wallet/wallet-history");
       const data = res.data.data;
 
       setTransactions(data);
@@ -68,7 +62,7 @@ const WalletPage = () => {
       calculateSummary(data);
     } catch (err) {
       console.error("Failed to load wallet:", err);
-      message.error("Failed to load wallet history.");
+      toast.error("Failed to load wallet history.");
     } finally {
       setLoading(false);
     }
@@ -118,7 +112,7 @@ const WalletPage = () => {
     setFiltered(result);
     setCurrentPage(1);
   }, [search, dateRange, statusFilter, transactions]);
- const columns = [
+  const columns = [
     {
       title: "Txn ID",
       dataIndex: "id",
@@ -139,9 +133,8 @@ const WalletPage = () => {
       width: 120,
       render: (t) => (
         <span
-          className={`capitalize flex items-center gap-1 ${
-            t === "credit" ? "text-blue-600" : "text-purple-600"
-          }`}
+          className={`capitalize flex items-center gap-1 ${t === "credit" ? "text-blue-600" : "text-purple-600"
+            }`}
         >
           {t === "credit" ? <FaMoneyBillWave /> : <FaArrowCircleUp />} {t}
         </span>
@@ -169,9 +162,6 @@ const WalletPage = () => {
 
   return (
     <div className="p-4 space-y-6 overflow-x-auto">
-      <h1 className="text-2xl font-bold text-indigo-700 border-b-2 border-indigo-400 inline-block pb-1">
-        🔁 Recent Wallet Transactions
-      </h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <DashboardCard

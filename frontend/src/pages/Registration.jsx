@@ -186,24 +186,20 @@ const ExtendedRegisterForm = () => {
           </div>
 
           <div>
-            <label className="block mb-1 font-medium">Select State *</label>
-            <select
+            <label className="block mb-1 font-medium">Enter State *</label>
+            <input
+              type="text"
               name="state"
               value={formData.state}
               onChange={handleChange}
+              placeholder="Enter State"
               className="w-full border px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-400"
-            >
-              <option value="">Select State</option>
-              <option value="Maharashtra">Maharashtra</option>
-              <option value="Delhi">Delhi</option>
-              <option value="Karnataka">Karnataka</option>
-            </select>
+            />
           </div>
 
+
           <div>
-            <label className="block mb-1 font-medium">
-              Select Account Type *
-            </label>
+            <label className="block mb-1 font-medium">Select Account Type *</label>
             <select
               name="account_type"
               value={formData.account_type}
@@ -211,10 +207,11 @@ const ExtendedRegisterForm = () => {
               className="w-full border px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-400"
             >
               <option value="">Select Account</option>
-              <option value="Savings">Savings</option>
-              <option value="Current">Current</option>
+              <option value="Demat">Demat Account</option>
+              <option value="Trading">Trading Account</option>
             </select>
           </div>
+
 
           <div>
             <label className="block mb-1 font-medium">Address *</label>
@@ -241,11 +238,10 @@ const ExtendedRegisterForm = () => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`w-full mt-4 text-white py-2 rounded-lg transition duration-300 ${
-              isSubmitting
+            className={`w-full mt-4 text-white py-2 rounded-lg transition duration-300 ${isSubmitting
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
-            }`}
+              }`}
           >
             {isSubmitting ? "Registering..." : "Register Now"}
           </button>

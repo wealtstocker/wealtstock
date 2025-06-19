@@ -109,17 +109,17 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
         {
           icon: <Banknote size={18} />,
           label: "Deposit Funds",
-          url: "/dashboard/fund-request/deposit",
+          url: "/admin/fund-request/deposit",
         },
         {
           icon: <ArrowDownCircle size={18} />,
           label: "Pay-In Requests",
-          url: "/dashboard/fund-request/payin",
+          url: "/admin/fund-request/payin",
         },
         {
           icon: <ArrowUpCircle size={18} />,
           label: "Pay-Out Requests",
-          url: "/dashboard/fund-request/payout",
+          url: "/admin/fund-request/payout",
         },
       ],
     },
@@ -129,13 +129,13 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
         {
           icon: <BsBank size={18} />,
           label: "Bank Accounts",
-          url: "/dashboard/banks",
+         url: "/admin/site-config",
         },
-        {
-          icon: <QrCode size={18} />,
-          label: "Site Config",
-          url: "/admin/site-config",
-        },
+        // {
+        //   icon: <QrCode size={18} />,
+        //   label: "Site Config",
+        //   url: "/admin/site-config",
+        // },
       ],
     },
     {

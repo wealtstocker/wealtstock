@@ -1,8 +1,5 @@
 import pool from "../config/db.js";
 
-
-
-
 export const createTrade = async (req, res) => {
   const {
     customer_id,
@@ -12,7 +9,7 @@ export const createTrade = async (req, res) => {
     exit_price,
     exit_quantity,
     brokerage,
-    created_by
+    created_by,
   } = req.body;
 
   const isAdmin = created_by === "admin";
@@ -22,11 +19,14 @@ export const createTrade = async (req, res) => {
   ORDER BY id DESC LIMIT 1
 `);
 
-    let trade_number = "T-1001";
-    if (lastTrade.length > 0) {
-        const lastNumber = parseInt(lastTrade[0].trade_number?.split("-")[1] || "1000", 10);
-        trade_number = `T-${lastNumber + 1}`;
-    }
+  let trade_number = "T-1001";
+  if (lastTrade.length > 0) {
+    const lastNumber = parseInt(
+      lastTrade[0].trade_number?.split("-")[1] || "1000",
+      10
+    );
+    trade_number = `T-${lastNumber + 1}`;
+  }
   try {
     // 1. Calculate trade values
     const buyValue = parseFloat(buy_price) * parseFloat(buy_quantity);
@@ -38,18 +38,23 @@ export const createTrade = async (req, res) => {
 
     // 2. Wallet validation for admin creating a loss
     if (isAdmin && profitLoss === "loss") {
-      const [walletRows] = await pool.query(`
+      const [walletRows] = await pool.query(
+        `
         SELECT balance FROM wallets
         WHERE customer_id = ?
         ORDER BY id DESC LIMIT 1
-      `, [customer_id]);
+      `,
+        [customer_id]
+      );
 
-      const currentBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
+      const currentBalance = walletRows.length
+        ? parseFloat(walletRows[0].balance)
+        : 0;
       if (currentBalance < profitLossValue) {
         return res.status(400).json({
           message: "Insufficient balance for loss trade",
           currentBalance,
-          required: profitLossValue
+          required: profitLossValue,
         });
       }
     }
@@ -63,10 +68,20 @@ export const createTrade = async (req, res) => {
         status, created_by
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        customer_id, trade_number, instrument, buy_price, buy_quantity, buyValue,
-        exit_price, exit_quantity, exitValue,
-        profitLoss, profitLossValue, brokerage,
-        status, created_by
+        customer_id,
+        trade_number,
+        instrument,
+        buy_price,
+        buy_quantity,
+        buyValue,
+        exit_price,
+        exit_quantity,
+        exitValue,
+        profitLoss,
+        profitLossValue,
+        brokerage,
+        status,
+        created_by,
       ]
     );
 
@@ -77,39 +92,40 @@ export const createTrade = async (req, res) => {
       const txnType = profitLoss === "profit" ? "credit" : "debit";
       const txnDesc = `Trade ${txnType} for Trade No: ${trade_number}`;
 
-      const [txnResult] = await pool.query(`
+      const [txnResult] = await pool.query(
+        `
         INSERT INTO transactions (customer_id, type, status, amount, description)
         VALUES (?, ?, 'completed', ?, ?)
-      `, [
-        customer_id,
-        txnType,
-        profitLossValue,
-        txnDesc
-      ]);
+      `,
+        [customer_id, txnType, profitLossValue, txnDesc]
+      );
 
       const transactionId = txnResult.insertId;
 
-      const [walletRows] = await pool.query(`
+      const [walletRows] = await pool.query(
+        `
         SELECT balance FROM wallets
         WHERE customer_id = ?
         ORDER BY id DESC LIMIT 1
-      `, [customer_id]);
+      `,
+        [customer_id]
+      );
 
-      const lastBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
-      const newBalance = txnType === "credit"
-        ? lastBalance + parseFloat(profitLossValue)
-        : lastBalance - parseFloat(profitLossValue);
+      const lastBalance = walletRows.length
+        ? parseFloat(walletRows[0].balance)
+        : 0;
+      const newBalance =
+        txnType === "credit"
+          ? lastBalance + parseFloat(profitLossValue)
+          : lastBalance - parseFloat(profitLossValue);
 
-      await pool.query(`
+      await pool.query(
+        `
         INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
         VALUES (?, ?, ?, ?, ?)
-      `, [
-        customer_id,
-        profitLossValue,
-        txnType,
-        newBalance,
-        transactionId
-      ]);
+      `,
+        [customer_id, profitLossValue, txnType, newBalance, transactionId]
+      );
     }
 
     res.status(201).json({
@@ -123,10 +139,9 @@ export const createTrade = async (req, res) => {
         brokerage: parseFloat(brokerage || 0).toFixed(2),
         netProfitLossValue: profitLossValue,
         profitLoss,
-        status
-      }
+        status,
+      },
     });
-
   } catch (error) {
     console.error("Error in createTrade:", error);
     res.status(500).json({ message: "Trade creation failed" });
@@ -134,23 +149,42 @@ export const createTrade = async (req, res) => {
 };
 
 export const getAllTrades = async (req, res) => {
-    try {
-        const [rows] = await pool.query("SELECT * FROM trades WHERE is_active = TRUE ORDER BY id DESC");
-        res.json(rows);
-    } catch (error) {
-        res.status(500).json({ message: "Failed to fetch trades" });
-    }
+  try {
+    const [rows] = await pool.query(
+      "SELECT * FROM trades WHERE is_active = TRUE  ORDER BY id DESC"
+    );
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch trades" });
+  }
+};
+export const getMyTrades = async (req, res) => {
+  customer_id = req.user.customer_id;
+  try {
+    const [rows] = await pool.query(
+      "SELECT * FROM trades WHERE customer_id = ?  ORDER BY id DESC",
+      customer_id
+    );
+    res.status(200).json({ message: "trades fetched", data: rows });
+    // res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch trades" });
+  }
 };
 
 // ✅ GET Trade by ID
 export const getTradeById = async (req, res) => {
-    try {
-        const [rows] = await pool.query("SELECT * FROM trades WHERE id = ? AND is_active = TRUE", [req.params.id]);
-        if (!rows.length) return res.status(404).json({ message: "Trade not found" });
-        res.json(rows[0]);
-    } catch (error) {
-        res.status(500).json({ message: "Error getting trade" });
-    }
+  try {
+    const [rows] = await pool.query(
+      "SELECT * FROM trades WHERE id = ? AND is_active = TRUE",
+      [req.params.id]
+    );
+    if (!rows.length)
+      return res.status(404).json({ message: "Trade not found" });
+    res.json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ message: "Error getting trade" });
+  }
 };
 
 // ✅ UPDATE Trade (rollback old txn, apply new if admin+approved)
@@ -172,7 +206,9 @@ export const updateTrade = async (req, res) => {
     const isApproved = updates.status === "approved";
 
     // Step 2: Reverse existing transaction if any
-    const txnDesc = `Trade ${oldTrade.profit_loss === "profit" ? "credit" : "debit"} for Trade No: ${oldTrade.trade_number}`;
+    const txnDesc = `Trade ${
+      oldTrade.profit_loss === "profit" ? "credit" : "debit"
+    } for Trade No: ${oldTrade.trade_number}`;
     const [txnRows] = await pool.query(
       `SELECT * FROM transactions WHERE description = ? AND customer_id = ? AND is_reversed = FALSE`,
       [txnDesc, oldTrade.customer_id]
@@ -190,17 +226,22 @@ export const updateTrade = async (req, res) => {
       const rollbackAmount = parseFloat(txn.amount);
 
       // Adjust balance
-      currentBalance = txn.type === "credit"
-        ? currentBalance - rollbackAmount
-        : currentBalance + rollbackAmount;
+      currentBalance =
+        txn.type === "credit"
+          ? currentBalance - rollbackAmount
+          : currentBalance + rollbackAmount;
 
-      await pool.query(`DELETE FROM wallets WHERE transaction_id = ?`, [txn.id]);
+      await pool.query(`DELETE FROM wallets WHERE transaction_id = ?`, [
+        txn.id,
+      ]);
       await pool.query(`DELETE FROM transactions WHERE id = ?`, [txn.id]);
     }
 
     // Step 3: Recalculate new trade values
-    const buyValue = parseFloat(updates.buy_price) * parseFloat(updates.buy_quantity);
-    const exitValue = parseFloat(updates.exit_price) * parseFloat(updates.exit_quantity);
+    const buyValue =
+      parseFloat(updates.buy_price) * parseFloat(updates.buy_quantity);
+    const exitValue =
+      parseFloat(updates.exit_price) * parseFloat(updates.exit_quantity);
     const brokerage = parseFloat(updates.brokerage || 0);
     const netPnl = exitValue - buyValue - brokerage;
     const profitLossValue = Math.abs(netPnl).toFixed(2);
@@ -218,7 +259,7 @@ export const updateTrade = async (req, res) => {
         return res.status(400).json({
           message: "Insufficient balance for loss trade",
           currentBalance,
-          required: profitLossValue
+          required: profitLossValue,
         });
       }
     }
@@ -238,9 +279,10 @@ export const updateTrade = async (req, res) => {
       );
       const txnId = txnResult.insertId;
 
-      const newBalance = txnType === "credit"
-        ? currentBalance + parseFloat(profitLossValue)
-        : currentBalance - parseFloat(profitLossValue);
+      const newBalance =
+        txnType === "credit"
+          ? currentBalance + parseFloat(profitLossValue)
+          : currentBalance - parseFloat(profitLossValue);
 
       await pool.query(
         `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
@@ -250,13 +292,11 @@ export const updateTrade = async (req, res) => {
     }
 
     res.json({ message: "Trade updated successfully" });
-
   } catch (error) {
     console.error("Error in updateTrade:", error);
     res.status(500).json({ message: "Failed to update trade" });
   }
 };
-
 
 // ✅ DELETE Trade (with wallet & txn rollback if admin)
 export const deleteTrade = async (req, res) => {
@@ -269,7 +309,9 @@ export const deleteTrade = async (req, res) => {
       [id]
     );
     if (tradeRows.length === 0)
-      return res.status(404).json({ message: "Trade not found or already inactive" });
+      return res
+        .status(404)
+        .json({ message: "Trade not found or already inactive" });
 
     const trade = tradeRows[0];
     const isAdmin = trade.created_by === "admin";
@@ -292,12 +334,15 @@ export const deleteTrade = async (req, res) => {
           `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1`,
           [trade.customer_id]
         );
-        const lastBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
+        const lastBalance = walletRows.length
+          ? parseFloat(walletRows[0].balance)
+          : 0;
         const profitLossValue = parseFloat(trade.profit_loss_value);
 
-        const newBalance = reverseType === "credit"
-          ? lastBalance + profitLossValue
-          : lastBalance - profitLossValue;
+        const newBalance =
+          reverseType === "credit"
+            ? lastBalance + profitLossValue
+            : lastBalance - profitLossValue;
 
         // Insert reversal wallet entry
         await pool.query(
@@ -315,10 +360,7 @@ export const deleteTrade = async (req, res) => {
     }
 
     // Step 3: Soft-delete the trade
-    await pool.query(
-      `UPDATE trades SET is_active = FALSE WHERE id = ?`,
-      [id]
-    );
+    await pool.query(`UPDATE trades SET is_active = FALSE WHERE id = ?`, [id]);
 
     res.json({ message: "Trade deleted and wallet adjusted (if applicable)." });
   } catch (error) {
@@ -327,68 +369,79 @@ export const deleteTrade = async (req, res) => {
   }
 };
 
-
 export const approveTrade = async (req, res) => {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    try {
-        // 1. Get the trade
-        const [trades] = await pool.query("SELECT * FROM trades WHERE id = ? AND is_active = TRUE", [id]);
-        if (!trades.length) return res.status(404).json({ message: "Trade not found" });
+  try {
+    // 1. Get the trade
+    const [trades] = await pool.query(
+      "SELECT * FROM trades WHERE id = ? AND is_active = TRUE",
+      [id]
+    );
+    if (!trades.length)
+      return res.status(404).json({ message: "Trade not found" });
 
-        const trade = trades[0];
-        if (trade.status === "approved") {
-            return res.status(400).json({ message: "Trade already approved" });
-        }
+    const trade = trades[0];
+    if (trade.status === "approved") {
+      return res.status(400).json({ message: "Trade already approved" });
+    }
 
-        const txnType = trade.profit_loss === "profit" ? "credit" : "debit";
-        const description = `Trade ${txnType} for Trade No: ${trade.trade_number}`;
+    const txnType = trade.profit_loss === "profit" ? "credit" : "debit";
+    const description = `Trade ${txnType} for Trade No: ${trade.trade_number}`;
 
-        // 2. Insert into transactions
-        const [txnResult] = await pool.query(`
+    // 2. Insert into transactions
+    const [txnResult] = await pool.query(
+      `
       INSERT INTO transactions (customer_id, type, status, amount, description)
       VALUES (?, ?, 'completed', ?, ?)
-    `, [
-            trade.customer_id,
-            txnType,
-            trade.profit_loss_value,
-            description
-        ]);
+    `,
+      [trade.customer_id, txnType, trade.profit_loss_value, description]
+    );
 
-        const transactionId = txnResult.insertId;
+    const transactionId = txnResult.insertId;
 
-        // 3. Get last balance
-        const [walletRows] = await pool.query(`
+    // 3. Get last balance
+    const [walletRows] = await pool.query(
+      `
       SELECT balance FROM wallets
       WHERE customer_id = ?
       ORDER BY id DESC LIMIT 1
-    `, [trade.customer_id]);
+    `,
+      [trade.customer_id]
+    );
 
-        const lastBalance = walletRows.length ? walletRows[0].balance : 0;
-        const newBalance = txnType === 'credit'
-            ? parseFloat(lastBalance) + parseFloat(trade.profit_loss_value)
-            : parseFloat(lastBalance) - parseFloat(trade.profit_loss_value);
+    const lastBalance = walletRows.length ? walletRows[0].balance : 0;
+    const newBalance =
+      txnType === "credit"
+        ? parseFloat(lastBalance) + parseFloat(trade.profit_loss_value)
+        : parseFloat(lastBalance) - parseFloat(trade.profit_loss_value);
 
-        // 4. Insert into wallet
-        await pool.query(`
+    // 4. Insert into wallet
+    await pool.query(
+      `
       INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
       VALUES (?, ?, ?, ?, ?)
-    `, [
-            trade.customer_id,
-            trade.profit_loss_value,
-            txnType,
-            newBalance,
-            transactionId
-        ]);
+    `,
+      [
+        trade.customer_id,
+        trade.profit_loss_value,
+        txnType,
+        newBalance,
+        transactionId,
+      ]
+    );
 
-        // 5. Update trade status
-        await pool.query("UPDATE trades SET status = 'approved' WHERE id = ?", [id]);
+    // 5. Update trade status
+    await pool.query("UPDATE trades SET status = 'approved' WHERE id = ?", [
+      id,
+    ]);
 
-        res.json({ message: "Trade approved, wallet updated", balance: newBalance });
-
-    } catch (error) {
-        console.error("Trade approval error:", error);
-        res.status(500).json({ message: "Approval failed" });
-    }
+    res.json({
+      message: "Trade approved, wallet updated",
+      balance: newBalance,
+    });
+  } catch (error) {
+    console.error("Trade approval error:", error);
+    res.status(500).json({ message: "Approval failed" });
+  }
 };
-

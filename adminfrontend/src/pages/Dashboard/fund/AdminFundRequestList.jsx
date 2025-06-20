@@ -154,43 +154,49 @@ const AdminFundRequestList = () => {
   ];
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">All Fund Requests</h2>
+   <div className="p-2 sm:p-6 bg-white rounded-md shadow-md overflow-x-auto">
+  <h2 className="text-xl font-bold mb-6 text-indigo-700">📄 All Fund Requests</h2>
 
-      <Row gutter={16} className="mb-4">
-        <Col span={8}>
-          <Input
-            placeholder="Search by name or email"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </Col>
-        <Col span={6}>
-          <Select
-            value={statusFilter}
-            onChange={(value) => setStatusFilter(value)}
-            style={{ width: '100%' }}
-          >
-            <Select.Option value="all">All</Select.Option>
-            <Select.Option value="pending">Pending</Select.Option>
-            <Select.Option value="successful">Successful</Select.Option>
-          </Select>
-        </Col>
-      </Row>
+  {/* Search and Filter Controls */}
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <Input
+      placeholder="🔍 Search by name or email"
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      className="w-full sm:w-1/2"
+      allowClear
+    />
 
-      {loading || customerLoading ? (
-        <div className="text-center py-10">
-          <Spin size="large" />
-        </div>
-      ) : (
-        <Table
-          columns={columns}
-          dataSource={filteredData}
-          rowKey="id"
-          pagination={{ pageSize: 10 }}
-        />
-      )}
+    <Select
+      value={statusFilter}
+      onChange={(value) => setStatusFilter(value)}
+      className="w-full sm:w-48"
+    >
+      <Select.Option value="all">All</Select.Option>
+      <Select.Option value="pending">Pending</Select.Option>
+      <Select.Option value="successful">Successful</Select.Option>
+    </Select>
+  </div>
+
+  {/* Table or Loading */}
+  {loading || customerLoading ? (
+    <div className="flex justify-center items-center min-h-[200px]">
+      <Spin size="large" />
     </div>
+  ) : (
+    <div className="overflow-x-auto">
+      <Table
+        columns={columns}
+        dataSource={filteredData}
+        rowKey="id"
+        pagination={{ pageSize: 10 }}
+        bordered
+        scroll={{ x: 900 }}
+      />
+    </div>
+  )}
+</div>
+
   );
 };
 

@@ -4,31 +4,36 @@ import DashboardSidebar from "../components/DashboardSidebar";
 import DashboardHeader from "../components/DashboardHeader";
 import BreadcrumbNav from "../lib/BreadcrumbNav";
 
-
 const AdminLayout = () => {
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [isSidebarOpen, setSidebarOpen] = useState(false); // start closed for mobile
 
   const handleSidebarToggle = () => setSidebarOpen((prev) => !prev);
   const handleSidebarClose = () => setSidebarOpen(false);
 
   return (
-    <div className="min-h-screen flex bg-gray-50 relative overflow-x-hidden">
-      {/* Sidebar */}
-      <DashboardSidebar isOpen={isSidebarOpen} onClose={handleSidebarClose} />
+    <div className="min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
+      {/* Header (Fixed) */}
+      <DashboardHeader
+        onMenuClick={handleSidebarToggle}
+        isSidebarOpen={isSidebarOpen}
+      />
 
-      {/* Main Area */}
-     <div
-        className={`flex-1 transition-all duration-600 ease-in-out ${isSidebarOpen ? "ml-1 md:ml-72" : "ml-0"
+      {/* Responsive Flex Layout */}
+      <div className="flex flex-1 pt-16">
+        {/* Sidebar */}
+        <DashboardSidebar isOpen={isSidebarOpen} onClose={handleSidebarClose} />
+
+        {/* Main Content */}
+        <div
+          className={`flex-1 w-full transition-all duration-500 ease-in-out px-3 sm:px-6 md:px-8 ${
+            isSidebarOpen ? "md:ml-72" : ""
           }`}
-      >
-        <DashboardHeader
-          onMenuClick={handleSidebarToggle}
-          isSidebarOpen={isSidebarOpen}
-        />
-        <main className="pt-16 mt-3 min-h-screen">
-          <BreadcrumbNav />
-          <Outlet />
-        </main>
+        >
+          <main className="mt-3 min-h-screen">
+            <BreadcrumbNav />
+            <Outlet />
+          </main>
+        </div>
       </div>
     </div>
   );

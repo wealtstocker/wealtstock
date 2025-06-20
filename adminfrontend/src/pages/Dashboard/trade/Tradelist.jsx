@@ -127,7 +127,7 @@ const TradeList = () => {
   ];
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-4 overflow-x-auto">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <h2 className="text-2xl font-bold text-indigo-700">All Trades</h2>
         <Button
@@ -146,7 +146,7 @@ const TradeList = () => {
       ) : trades.length === 0 ? (
         <Empty description="No trades found" />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="w-full overflow-x-auto">
           <Table
             columns={columns}
             dataSource={trades}
@@ -159,9 +159,11 @@ const TradeList = () => {
               showTotal: (total, range) =>
                 `${range[0]}-${range[1]} of ${total} trades`,
             }}
-            className="min-w-[600px] sm:min-w-full"
+            scroll={{ x: 'max-content' }} // ✅ Enables horizontal scroll
+            className="min-w-[800px]"     // ✅ Ensures proper min width on mobile
           />
         </div>
+
       )}
     </div>
   );

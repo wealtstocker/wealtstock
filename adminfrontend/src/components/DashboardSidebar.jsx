@@ -91,7 +91,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
           url: "/admin/trades",
         },
         {
-          icon: <BarChart size={18} />,
+          icon: <ArrowDownCircle size={18} />,
           label: "Fund-Req",
           url: "/admin/fund-requests",
         },
@@ -114,7 +114,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
         {
           icon: <ArrowDownCircle size={18} />,
           label: "Pay-In Requests",
-          url: "/admin/fund-request/payin",
+          url: "/admin/fund-requests",
         },
         {
           icon: <ArrowUpCircle size={18} />,

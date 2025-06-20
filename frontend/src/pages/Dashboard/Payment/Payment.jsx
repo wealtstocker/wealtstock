@@ -31,7 +31,6 @@ const DashboardCard = ({ icon, label, value, color }) => (
 const PaymentPage = () => {
   const [fundRequests, setFundRequests] = useState({ pending: [], completed: [] });
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchFundRequests = async () => {
       setLoading(true);

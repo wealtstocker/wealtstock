@@ -8,7 +8,7 @@ import {
   Space,
   Popconfirm,
   Modal,
-
+  
 } from 'antd';
 import { SearchOutlined, EyeOutlined } from '@ant-design/icons';
 import {
@@ -165,43 +165,74 @@ const CustomerTable = () => {
       />
 
       <Modal
-        open={viewModal}
-        onCancel={() => setViewModal(false)}
-        footer={null}
-        title={<span className="font-bold text-lg">Customer Overview</span>}
-        className="max-w-full sm:max-w-lg"
-      >
-        {selectedCustomer && (
-          <div className="text-sm sm:text-base space-y-2 break-words">
-            <p><strong>ID:</strong> {selectedCustomer.id}</p>
-            <p><strong>Full Name:</strong> {selectedCustomer.full_name}</p>
-            <p><strong>Email:</strong> {selectedCustomer.email}</p>
-            <p><strong>Phone:</strong> {selectedCustomer.phone_number}</p>
-            <p><strong>Aadhar Number:</strong> {selectedCustomer.aadhar_number}</p>
-            <p><strong>PAN Number:</strong> {selectedCustomer.pan_number}</p>
-            <p><strong>Gender:</strong> {selectedCustomer.gender}</p>
-            <p><strong>Date of Birth:</strong> {selectedCustomer.dob ? new Date(selectedCustomer.dob).toLocaleDateString() : 'N/A'}</p>
-            <p><strong>Account Type:</strong> {selectedCustomer.account_type}</p>
-            <p><strong>Address:</strong> {selectedCustomer.address}</p>
-            <p><strong>City:</strong> {selectedCustomer.city}</p>
-            <p><strong>State:</strong> {selectedCustomer.state}</p>
-            <p><strong>Password Hash:</strong> {selectedCustomer.password_hash}</p>
-            {selectedCustomer.document_url && (
-              <p>
-                <strong>Document:</strong>{' '}
-                <a
-                  href={`${import.meta.env.VITE_BASE_URL}/${selectedCustomer.document_url.replace(/\\/g, '/')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 underline"
-                >
-                  View Document
-                </a>
-              </p>
-            )}
-          </div>
-        )}
-      </Modal>
+  open={viewModal}
+  onCancel={() => setViewModal(false)}
+  footer={null}
+  title={<span className="font-bold text-lg text-blue-700 border-b-2 border-dashed pb-1 "   >👤 Customer Overview</span>}
+  className="max-w-full sm:max-w-3xl"
+  bodyStyle={{ maxHeight: "70vh", overflowY: "auto" }}
+>
+  {selectedCustomer ? (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm sm:text-base text-gray-700 break-words">
+      {/* Personal Info */}
+      <div className="col-span-2 mb-2">
+        <h3 className="text-blue-600 font-semibold text-base my-2">Personal Details</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-3 rounded-xl">
+          <p><strong>Customer ID:</strong> {selectedCustomer.id}</p>
+          <p><strong>Full Name:</strong> {selectedCustomer.full_name}</p>
+          <p><strong>Gender:</strong> {selectedCustomer.gender || "N/A"}</p>
+          <p><strong>DOB:</strong> {selectedCustomer.dob ? new Date(selectedCustomer.dob).toLocaleDateString() : 'N/A'}</p>
+        </div>
+      </div>
+
+      {/* Contact Info */}
+      <div className="col-span-2 mb-2">
+        <h3 className="text-blue-600 font-semibold text-base mb-1">Contact Information</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <p><strong>Email:</strong> <a href={`mailto:${selectedCustomer.email}`} className="text-blue-500 underline">{selectedCustomer.email}</a></p>
+          <p><strong>Phone:</strong> <a href={`tel:${selectedCustomer.phone_number}`} className="text-blue-500 underline">{selectedCustomer.phone_number}</a></p>
+        </div>
+      </div>
+
+      {/* Account Info */}
+      <div className="col-span-2 mb-2">
+        <h3 className="text-blue-600 font-semibold text-base mb-1">Account & KYC</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <p><strong>Account Type:</strong> {selectedCustomer.account_type || "N/A"}</p>
+          <p><strong>Aadhar No:</strong> {selectedCustomer.aadhar_number || "N/A"}</p>
+          <p><strong>PAN No:</strong> {selectedCustomer.pan_number || "N/A"}</p>
+          <p className='text-red-400'><strong>Password:</strong> <span className="break-all  text-red-400">{selectedCustomer.password_hash}</span></p>
+          {selectedCustomer.document_url && (
+            <p className="col-span-2">
+              <strong>Document:</strong>{" "}
+              <a
+                href={`${import.meta.env.VITE_BASE_URL}/${selectedCustomer.document_url.replace(/\\/g, "/")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 underline"
+              >
+                View Document
+              </a>
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Address Info */}
+      <div className="col-span-2">
+        <h3 className="text-blue-600 font-semibold text-base mb-1">Address</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <p><strong>Address:</strong> {selectedCustomer.address}</p>
+          <p><strong>City:</strong> {selectedCustomer.city}</p>
+          <p><strong>State:</strong> {selectedCustomer.state}</p>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div className="text-gray-500">No customer data available.</div>
+  )}
+</Modal>
+
     </div>
   );
 };

@@ -6,7 +6,7 @@ export const fetchFundRequests = createAsyncThunk(
   'fund/fetchAll',
   async () => {
     const res = await axiosInstance.get('/wallet/admin/fund-requests');
-    console.log("-----",res)
+    // console.log("-----",res)
     return res.data.data;
   }
 );
@@ -15,7 +15,8 @@ export const fetchFundRequests = createAsyncThunk(
 export const approveFundRequest = createAsyncThunk(
   'fund/approve',
   async (requestId) => {
-    const res = await axiosInstance.post(`/approve-fund-request/${requestId}`);
+    const res = await axiosInstance.post(`/wallet/approve-fund-request/${requestId}`);
+    console.log(res)
     return { ...res.data, requestId };
   }
 );

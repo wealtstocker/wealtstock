@@ -1,5 +1,4 @@
-import React, { useEffect } from 'react';
-import { Form, Input, InputNumber, Button, message, Row, Col } from 'antd';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -7,134 +6,198 @@ import {
   createTrade,
   updateTrade,
 } from '../../../redux/Slices/tradeSlice';
+import { fetchAllCustomers } from '../../../redux/Slices/customerSlice';
 import Toast from '../../../services/toast';
+import { FiUser, FiDollarSign, FiHash, FiList, FiPercent } from 'react-icons/fi';
 
 const TradeForm = () => {
-  const [form] = Form.useForm();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { id } = useParams();
-  const { single: trade, loading } = useSelector((state) => state.trade);
-
   const isEdit = Boolean(id);
 
+  const { single: trade, loading } = useSelector((state) => state.trade);
+  const { all: customers } = useSelector((state) => state.customer);
+
+  const [formData, setFormData] = useState({
+    customer_id: '',
+    instrument: '',
+    buy_price: '',
+    buy_quantity: '',
+    exit_price: '',
+    exit_quantity: '',
+    brokerage: '',
+  });
+
   useEffect(() => {
-    if (isEdit) {
-      dispatch(fetchSingleTrade(id));
-    }
-  }, [id, dispatch]);
+    dispatch(fetchAllCustomers());
+    if (isEdit) dispatch(fetchSingleTrade(id));
+  }, [dispatch, id]);
 
   useEffect(() => {
     if (isEdit && trade) {
-      form.setFieldsValue(trade);
+      setFormData(trade);
     }
-  }, [trade, form, isEdit]);
+  }, [trade, isEdit]);
 
-  const onFinish = async (values) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
-      if (isEdit) {
-        await dispatch(updateTrade({ id, data: values })).unwrap();
-        Toast.success('Trade updated successfully');
-      } else {
-        await dispatch(createTrade({ ...values, created_by: 'admin' })).unwrap();
-        Toast.success('Trade created successfully');
-      }
+      const action = isEdit
+        ? updateTrade({ id, data: formData })
+        : createTrade({ ...formData, created_by: 'admin' });
+
+      await dispatch(action).unwrap();
+      Toast.success(`Trade ${isEdit ? 'updated' : 'created'} successfully`);
       navigate('/admin/trades');
-    } catch (err) {
-      message.error('Something went wrong');
+    } catch (error) {
+      Toast.error('Something went wrong');
     }
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <h2 className="text-2xl font-semibold mb-6 text-center">
-        {isEdit ? 'Edit Trade' : 'Create Trade'}
+    <div className="max-w-5xl mx-auto px-4 py-10">
+      <h2 className="text-2xl font-bold text-center mb-8 flex items-center justify-center gap-2 text-indigo-700">
+        📝 {isEdit ? 'Edit Trade' : 'Create Trade'}
       </h2>
 
-      <Form
-        layout="vertical"
-        onFinish={onFinish}
-        form={form}
-        className="bg-white !p-6  rounded-xl shadow-md"
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-6 rounded-xl shadow-lg grid grid-cols-1 md:grid-cols-2 gap-6"
       >
-        <Row gutter={[16, 16]}>
-          <Col xs={24} md={12}>
-            <Form.Item
-              name="customer_id"
-              label="Customer ID"
-              rules={[{ required: true }]}
-            >
-              <Input placeholder="Enter customer UUID" />
-            </Form.Item>
-          </Col>
+        {/* Customer */}
+        <div>
+          <label className="block text-sm font-semibold mb-1">
+            <FiUser className="inline mr-1" /> Customer
+          </label>
+          <select
+            name="customer_id"
+            value={formData.customer_id}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          >
+            <option value="">Select a customer</option>
+            {customers.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.full_name} ({c.id})
+              </option>
+            ))}
+          </select>
+        </div>
 
-          <Col xs={24} md={12}>
-            <Form.Item
-              name="instrument"
-              label="Instrument"
-              rules={[{ required: true }]}
-            >
-              <Input placeholder="Stock/Index name" />
-            </Form.Item>
-          </Col>
+        {/* Instrument */}
+        <div>
+          <label className="block text-sm font-semibold mb-1">
+            <FiList className="inline mr-1" /> Instrument
+          </label>
+          <input
+            name="instrument"
+            type="text"
+            placeholder="Stock/Index name"
+            value={formData.instrument}
+            onChange={handleChange}
+            required
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
 
-          <Col xs={24} md={12}>
-            <Form.Item
-              name="buy_price"
-              label="Buy Price"
-              rules={[{ required: true }]}
-            >
-              <InputNumber className="w-full" placeholder="0.00" />
-            </Form.Item>
-          </Col>
+        {/* Buy Price */}
+        <div>
+          <label className="block text-sm font-semibold mb-1">
+            <FiDollarSign className="inline mr-1" /> Buy Price
+          </label>
+          <input
+            name="buy_price"
+            type="number"
+            placeholder="0.00"
+            value={formData.buy_price}
+            onChange={handleChange}
+            required
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
 
-          <Col xs={24} md={12}>
-            <Form.Item
-              name="buy_quantity"
-              label="Buy Quantity"
-              rules={[{ required: true }]}
-            >
-              <InputNumber className="w-full" placeholder="0" />
-            </Form.Item>
-          </Col>
+        {/* Buy Quantity */}
+        <div>
+          <label className="block text-sm font-semibold mb-1">
+            <FiHash className="inline mr-1" /> Buy Quantity
+          </label>
+          <input
+            name="buy_quantity"
+            type="number"
+            placeholder="0"
+            value={formData.buy_quantity}
+            onChange={handleChange}
+            required
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
 
-          <Col xs={24} md={12}>
-            <Form.Item
-              name="exit_price"
-              label="Exit Price"
-              rules={[{ required: true }]}
-            >
-              <InputNumber className="w-full" placeholder="0.00" />
-            </Form.Item>
-          </Col>
+        {/* Exit Price */}
+        <div>
+          <label className="block text-sm font-semibold mb-1">
+            <FiDollarSign className="inline mr-1" /> Exit Price
+          </label>
+          <input
+            name="exit_price"
+            type="number"
+            placeholder="0.00"
+            value={formData.exit_price}
+            onChange={handleChange}
+            required
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
 
-          <Col xs={24} md={12}>
-            <Form.Item
-              name="exit_quantity"
-              label="Exit Quantity"
-              rules={[{ required: true }]}
-            >
-              <InputNumber className="w-full" placeholder="0" />
-            </Form.Item>
-          </Col>
+        {/* Exit Quantity */}
+        <div>
+          <label className="block text-sm font-semibold mb-1">
+            <FiHash className="inline mr-1" /> Exit Quantity
+          </label>
+          <input
+            name="exit_quantity"
+            type="number"
+            placeholder="0"
+            value={formData.exit_quantity}
+            onChange={handleChange}
+            required
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
 
-          <Col xs={24} md={12}>
-            <Form.Item
-              name="brokerage"
-              label="Brokerage"
-              rules={[{ required: true }]}
-            >
-              <InputNumber className="w-full" placeholder="0.00" />
-            </Form.Item>
-          </Col>
-        </Row>
+        {/* Brokerage */}
+        <div className="md:col-span-2">
+          <label className="block text-sm font-semibold mb-1">
+            <FiPercent className="inline mr-1" /> Brokerage
+          </label>
+          <input
+            name="brokerage"
+            type="number"
+            placeholder="0.00"
+            value={formData.brokerage}
+            onChange={handleChange}
+            required
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
 
-        <Form.Item className="text-center mt-6">
-          <Button type="primary" htmlType="submit" loading={loading}>
+        {/* Submit */}
+        <div className="md:col-span-2 text-center mt-6">
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition"
+          >
             {isEdit ? 'Update Trade' : 'Submit Trade'}
-          </Button>
-        </Form.Item>
-      </Form>
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

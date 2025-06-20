@@ -17,6 +17,25 @@ const Navbar = () => {
   const navRef = useRef();
   const mobileMenuRef = useRef();
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+    if (token && storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setIsLoggedIn(true);
+      } catch (err) {
+        console.error("Failed to parse user", err);
+        setIsLoggedIn(false);
+      }
+    } else {
+      setIsLoggedIn(false);
+    }
+  }, []);
 
   useEffect(() => {
     gsap.from(navRef.current, {
@@ -66,7 +85,13 @@ const Navbar = () => {
     >
       {/* Left: Logo */}
       <div className="flex-shrink-0">
-        <img src={Logo} title="finance market" alt="Logo" className="h-10 w-auto" />
+        <Link to="/" title="Go to Home - Finance Market">
+          <img
+            src={Logo}
+            alt="Logo"
+            className="h-10 w-auto"
+          />
+        </Link>
       </div>
 
       {/* Center: Nav Links - Desktop */}
@@ -87,23 +112,55 @@ const Navbar = () => {
       </ul>
 
       {/* Right: Login and Registration Buttons */}
-      <div className="hidden md:flex gap-4">
-        <Link
-          to="/login"
-          title="Login to access ..."
-          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-105 "
-        >
-          <FaSignInAlt className="inline mr-1" />
-          Login
-        </Link>
-        <Link
-          to="/register"
-          className="flex items-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-red-500 transition duration-300 transform hover:scale-105"
-        >
-         <FaUserPlus className="inline mr-1" />
-          New Registration
-        </Link>
+      {/* Right Side Controls */}
+      <div className="hidden md:flex gap-4 items-center">
+        {isLoggedIn ? (
+          <>
+            <span
+              title={`Welcome, ${user?.full_name || "User"}`}
+              className="text-sm font-medium text-gray-700"
+            >
+              👋 {user?.full_name?.split(" ")[0] || "User"}
+            </span>
+
+            <Link
+              to="/dashboard"
+              title="Go to Dashboard"
+              className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-300 transform hover:scale-105"
+            >
+              <FaHome className="text-white" />
+              Dashboard
+            </Link>
+
+            <Link
+              to="/dashboard/profile"
+              title="View Profile"
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition"
+            >
+              <FaUserPlus />
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link
+              to="/login"
+              title="Login to access your dashboard"
+              className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-105"
+            >
+              <FaSignInAlt className="inline mr-1" />
+              Login
+            </Link>
+            <Link
+              to="/register"
+              className="flex items-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-red-500 transition duration-300 transform hover:scale-105"
+            >
+              <FaUserPlus className="inline mr-1" />
+              New Registration
+            </Link>
+          </>
+        )}
       </div>
+
 
       {/* Hamburger Icon - Mobile */}
       <div className="md:hidden">
@@ -154,22 +211,47 @@ const Navbar = () => {
               {label}
             </Link>
           ))}
-          <Link
-            to="/login"
-            onClick={() => setIsOpen(false)}
-            className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-red-500 transition duration-300 transform hover:scale-105"
-          >
-            <FaSignInAlt />
-            Login
-          </Link>
-          <Link
-            to="/register"
-            onClick={() => setIsOpen(false)}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-red-500 transition duration-300 transform hover:scale-105"
-          >
-            <FaUserPlus />
-            New Registration
-          </Link>
+          {isLoggedIn ? (
+            <>
+              <div className="text-sm font-medium px-2">👋 {user?.full_name || "User"}</div>
+              <Link
+                to="/dashboard"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-300 transform hover:scale-105"
+              >
+                <FaHome />
+                Dashboard
+              </Link>
+              <Link
+                to="/dashboard/profile"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-105"
+              >
+                <FaUserPlus />
+                Profile
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-red-500 transition duration-300 transform hover:scale-105"
+              >
+                <FaSignInAlt />
+                Login
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-red-500 transition duration-300 transform hover:scale-105"
+              >
+                <FaUserPlus />
+                New Registration
+              </Link>
+            </>
+          )}
+
         </div>
       )}
     </nav>

@@ -23,16 +23,6 @@ import toast from "../../Services/toast";
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
-const DashboardCard = ({ icon, value, label, color }) => (
-  <div className="flex items-center p-4 space-x-4 shadow rounded-lg bg-white hover:bg-gray-100 transition">
-    <div className={`p-3 rounded-full text-white bg-${color}-500`}>{icon}</div>
-    <div className="flex flex-col">
-      <p className="text-xl font-bold">{value || "0"}</p>
-      <p className="text-gray-600">{label}</p>
-    </div>
-  </div>
-);
-
 const WalletPage = () => {
   const [walletData, setWalletData] = useState({
     addFund: 0,
@@ -50,7 +40,6 @@ const WalletPage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
-
   const fetchWalletHistory = async () => {
     try {
       setLoading(true);
@@ -113,12 +102,13 @@ const WalletPage = () => {
     setCurrentPage(1);
   }, [search, dateRange, statusFilter, transactions]);
   const columns = [
-    {
-      title: "Txn ID",
-      dataIndex: "id",
-      key: "id",
-      width: 100,
-    },
+  {
+  title: "S.No",
+  key: "serial",
+  width: 80,
+  render: (_text, _record, index) =>
+    filtered.length - ((currentPage - 1) * pageSize + index),
+},
     {
       title: "Amount (₹)",
       dataIndex: "amount",
@@ -161,50 +151,29 @@ const WalletPage = () => {
   ];
 
   return (
-    <div className="p-4 space-y-6 overflow-x-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 bg-white min-h-screen overflow-x-auto">
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <DashboardCard
-          icon={<FaMoneyBillWave size={24} />}
-          value={`₹${walletData.addFund}`}
-          label="Add Fund"
-          color="green"
-        />
-        <DashboardCard
-          icon={<FaWallet size={24} />}
-          value={`₹${walletData.winning}`}
-          label="Winning Amount"
-          color="blue"
-        />
-        <DashboardCard
-          icon={<FaArrowCircleDown size={24} />}
-          value={`₹${walletData.loss}`}
-          label="Loss Amount"
-          color="red"
-        />
-        <DashboardCard
-          icon={<FaArrowCircleUp size={24} />}
-          value={`₹${walletData.withdrawal}`}
-          label="Withdrawal"
-          color="purple"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* 🔍 Filter Controls (Search | Date | Status) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <Input.Search
           placeholder="🔍 Search by Txn ID"
           onChange={(e) => setSearch(e.target.value)}
-          className="rounded-md shadow-sm"
+          className="w-full rounded-md shadow-sm"
           allowClear
+          size="large"
         />
+
         <RangePicker
           className="w-full"
           onChange={(dates) => setDateRange(dates)}
+          size="large"
         />
+
         <Select
           defaultValue="all"
           className="w-full"
           onChange={(value) => setStatusFilter(value)}
+          size="large"
         >
           <Option value="all">All</Option>
           <Option value="pending">Pending</Option>
@@ -214,41 +183,53 @@ const WalletPage = () => {
         </Select>
       </div>
 
-      <div className="hidden sm:block">
+      {/* 📄 Table Section */}
+      <div className="block">
         {loading ? (
-          <Spin size="large" />
+          <div className="flex justify-center items-center min-h-[200px]">
+            <Spin size="large" />
+          </div>
         ) : filtered.length === 0 ? (
-          <Empty description="No transactions found" />
+          <div className="flex justify-center items-center min-h-[200px]">
+            <Empty description="No transactions found" />
+          </div>
         ) : (
           <>
-            <Table
-              dataSource={filtered.slice(
-                (currentPage - 1) * pageSize,
-                currentPage * pageSize
-              )}
-              columns={columns}
-              pagination={false}
-              rowKey="id"
-              bordered
-            />
-            <div className="mt-4 flex justify-between items-center">
+            <div className="overflow-x-auto">
+              <Table
+                dataSource={filtered.slice(
+                  (currentPage - 1) * pageSize,
+                  currentPage * pageSize
+                )}
+                columns={columns}
+                pagination={false}
+                rowKey="id"
+                bordered
+              />
+            </div>
+
+            {/* 📄 Pagination Info */}
+            <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <span className="text-sm text-gray-500">
                 Showing{" "}
                 {Math.min((currentPage - 1) * pageSize + 1, filtered.length)} -{" "}
                 {Math.min(currentPage * pageSize, filtered.length)} of{" "}
                 {filtered.length}
               </span>
+
               <Pagination
                 current={currentPage}
                 total={filtered.length}
                 pageSize={pageSize}
                 onChange={(page) => setCurrentPage(page)}
                 showSizeChanger={false}
+                className="text-sm"
               />
             </div>
           </>
         )}
       </div>
+
 
       <div className="text-sm italic text-center text-gray-600 mt-8 bg-gray-50 p-2 rounded-md">
         * Note: Broker charges are automatically deducted from each transaction.

@@ -11,11 +11,13 @@ import TradeForm from "../pages/Dashboard/trade/TradeForm";
 import AdminFundRequestList from "../pages/Dashboard/fund/AdminFundRequestList";
 import AdminTransactionList from "../pages/Dashboard/fund/AdminTransactionList";
 import SiteConfigPage from "../pages/Dashboard/SiteConfig";
+import AdminRegisterPage from "../components/AdminRegisterPage";
 
 const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<LoginPage />} />
+      <Route path="/admin/reg" element={<AdminRegisterPage />} />
 
       {/* Admin Protected Routes */}
       <Route path="/admin" element={<AdminLayout />}>

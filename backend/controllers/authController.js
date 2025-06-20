@@ -5,6 +5,7 @@ import { generateToken } from "../utils/token.js";
 import { v4 as uuidv4 } from "uuid";
 import { sendSMS, saveOtp, verifyOtp, clearOtp } from "../utils/otp.js";
 
+
 export async function registerAdmin(req, res) {
   const {
     full_name,
@@ -15,49 +16,68 @@ export async function registerAdmin(req, res) {
     role = "admin",
   } = req.body;
 
-  if (!full_name || !email || !password || !confirm_password)
+  if (!full_name || !email || !password || !confirm_password) {
     return res
       .status(400)
       .json({ message: "All required fields must be filled" });
+  }
 
-  if (password !== confirm_password)
+  if (password !== confirm_password) {
     return res.status(400).json({ message: "Passwords do not match" });
+  }
 
   try {
-    const [existing] = await pool.query("SELECT * FROM users WHERE email = ?", [
-      email,
-    ]);
-    if (existing.length > 0)
+    const [existing] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
+    if (existing.length > 0) {
       return res.status(409).json({ message: "Admin already registered" });
+    }
 
-    const password_hash = password;
+    const password_hash = await bcrypt.hash(password, 10); // ✅ Secure hash
     const uuid = uuidv4();
 
     await pool.query(
-      "INSERT INTO users (uuid, full_name, email, phone_number, password_hash, role) VALUES (?, ?, ?, ?, ?, ?)",
+      `INSERT INTO users (uuid, full_name, email, phone_number, password_hash, role, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, 1)`,
       [uuid, full_name, email, phone_number, password_hash, role]
     );
 
-    res.status(201).json({ message: "Admin registered successfully", uuid });
+    res.status(201).json({
+      message: "Admin registered successfully",
+      uuid,
+    });
   } catch (err) {
+    console.error("Registration error:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 }
+
 
 export async function loginAdmin(req, res) {
   const { email, password } = req.body;
 
   try {
-    const [rows] = await pool.query("SELECT * FROM users WHERE email = ?", [
-      email,
-    ]);
-    if (rows.length === 0)
+    const [rows] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
+
+    if (rows.length === 0) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
 
     const admin = rows[0];
+
+    // Check role
+    if (admin.role !== "admin") {
+      return res.status(403).json({ message: "Access denied: Not an admin" });
+    }
+
+    // Check activation
+    if (admin.is_active === 0) {
+      return res.status(403).json({ message: "Account is deactivated" });
+    }
+
     const isMatch = await bcrypt.compare(password, admin.password_hash);
-    if (!isMatch)
+    if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
 
     const token = generateToken({
       id: admin.uuid,
@@ -69,7 +89,7 @@ export async function loginAdmin(req, res) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
     });
 
     res.status(200).json({
@@ -83,9 +103,11 @@ export async function loginAdmin(req, res) {
       },
     });
   } catch (err) {
+    console.error("Login error:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 }
+
 
 export function logout(req, res) {
   res.clearCookie("token");

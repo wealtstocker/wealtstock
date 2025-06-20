@@ -1,0 +1,4 @@
+/* Tailwind: add this to your CSS if needed */
+.table-striped tbody tr:nth-child(odd) {
+  @apply bg-gray-50;
+}

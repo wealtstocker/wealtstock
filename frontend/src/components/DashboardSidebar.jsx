@@ -121,11 +121,11 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
           label: "Payment",
           url: "/dashboard/payment",
         },
-        {
-          icon: <CheckCircle2 size={18} />,
-          label: "Payment Approved",
-          url: "/dashboard/payment-approved",
-        },
+        // {
+        //   icon: <CheckCircle2 size={18} />,
+        //   label: "Payment Approved",
+        //   url: "/dashboard/payment-approved",
+        // },
         {
           icon: <Settings size={18} />,
           label: "Settings",

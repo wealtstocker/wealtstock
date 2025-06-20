@@ -74,31 +74,32 @@ const LoginPage = () => {
   };
 
   const handleForgotPassword = async () => {
-    const { value: phone } = await Swal.fire({
-      title: "Forgot Password",
-      input: "text",
-      inputLabel: "Enter your phone number",
-      inputPlaceholder: "e.g. 9876543210",
-      showCancelButton: true,
-      confirmButtonText: "Send OTP",
-    });
+    // const { value: phone } = await Swal.fire({
+    //   title: "Forgot Password",
+    //   input: "text",
+    //   inputLabel: "Enter your phone number",
+    //   inputPlaceholder: "e.g. 9876543210",
+    //   showCancelButton: true,
+    //   confirmButtonText: "Send OTP",
+    // });
 
-    if (phone) {
-      try {
-        const response = await fetch(`/api/forgot-password`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone_number: phone }),
-        });
-        const data = await response.json();
+    // if (phone) {
+    //   try {
+    //     const response = await fetch(`/api/forgot-password`, {
+    //       method: "POST",
+    //       headers: { "Content-Type": "application/json" },
+    //       body: JSON.stringify({ phone_number: phone }),
+    //     });
+    //     const data = await response.json();
 
-        if (!response.ok) throw new Error(data.message);
+    //     if (!response.ok) throw new Error(data.message);
 
-        Swal.fire("OTP Sent", data.message, "success");
-      } catch (err) {
-        Swal.fire("Error", err.message, "error");
-      }
-    }
+    //     Swal.fire("OTP Sent", data.message, "success");
+    //   } catch (err) {
+    //     Swal.fire("Error", err.message, "error");
+    //   }
+    // }
+    Swal.fire("Info",  "error");
   };
 
   return (
@@ -158,14 +159,6 @@ const LoginPage = () => {
               className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition duration-300"
             >
               {loading ? "Logging in..." : "Sign In"}
-            </button>
-
-            {/* Demo */}
-            <button
-              onClick={handleDemoLogin}
-              className="w-full mt-3 bg-gradient-to-r from-green-500 to-teal-500 text-white font-semibold py-2 rounded-lg hover:from-green-600 hover:to-teal-600 transition duration-300"
-            >
-              Demo Login
             </button>
 
             {/* Bottom Links */}

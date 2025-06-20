@@ -11,7 +11,6 @@ const TradeListPage = () => {
   const { all, loading } = useSelector((state) => state.trade);
   const [searchText, setSearchText] = useState('');
 
-  console.log(all)
   useEffect(() => {
     dispatch(fetchAllTrades());
   }, [dispatch]);
@@ -26,12 +25,8 @@ const TradeListPage = () => {
       dataIndex: 'trade_number',
       key: 'trade_number',
       sorter: (a, b) => a.trade_number.localeCompare(b.trade_number),
+      responsive: ['xs', 'sm', 'md', 'lg'],
     },
-    // {
-    //   title: 'Instrument',
-    //   dataIndex: 'instrument',
-    //   key: 'instrument',
-    // },
     {
       title: 'Buy Price',
       dataIndex: 'buy_price',
@@ -71,7 +66,11 @@ const TradeListPage = () => {
       sorter: (a, b) =>
         parseFloat(a.profit_loss_value) - parseFloat(b.profit_loss_value),
       render: (_, record) => (
-        <span className={record.profit_loss === 'profit' ? 'text-green-600' : 'text-red-600'}>
+        <span
+          className={
+            record.profit_loss === 'profit' ? 'text-green-600' : 'text-red-600'
+          }
+        >
           ₹{parseFloat(record.profit_loss_value).toFixed(2)}
         </span>
       ),
@@ -97,6 +96,7 @@ const TradeListPage = () => {
       render: (_, record) => (
         <Button
           icon={<EyeOutlined />}
+          size="small"
           onClick={() => navigate(`/dashboard/trade/${record.id}`)}
         >
           View
@@ -106,24 +106,31 @@ const TradeListPage = () => {
   ];
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <h2 className="text-xl font-bold mb-4">📊 Trade List</h2>
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-screen">
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 text-gray-800">
+        📊 Trade List
+      </h2>
 
       <Input.Search
         placeholder="Search by Trade No"
         onChange={(e) => setSearchText(e.target.value)}
-        className="mb-4 max-w-sm"
+        className="mb-4 w-full max-w-sm"
         allowClear
+        size="large"
       />
 
-      <Table
-        columns={columns}
-        dataSource={filteredData}
-        loading={loading}
-        rowKey="id"
-        pagination={{ pageSize: 10 }}
-        bordered
-      />
+      {/* ✅ Responsive scroll container */}
+      <div className="overflow-x-auto">
+        <Table
+          columns={columns}
+          dataSource={filteredData}
+          loading={loading}
+          rowKey="id"
+          pagination={{ pageSize: 10 }}
+          bordered
+          scroll={{ x: 1000 }} // 👈 Enables horizontal scroll on small screens
+        />
+      </div>
     </div>
   );
 };

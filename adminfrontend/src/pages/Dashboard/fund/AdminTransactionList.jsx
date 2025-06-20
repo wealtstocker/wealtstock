@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Input, Select, Row, Col, Tag, Spin } from 'antd';
+import { Table, Input, Select, Tag, Spin, Button } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAllTransactions } from '../../../redux/Slices/balanceSlice';
+import { DownloadOutlined } from '@ant-design/icons';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const { Option } = Select;
 
 const AdminTransactionList = () => {
   const dispatch = useDispatch();
- const { transactions, loadingTransactions } = useSelector((state) => state.balance);
-// console.log("tttt", transactions)
+  const { transactions, loadingTransactions } = useSelector((state) => state.balance);
+
   const [filteredData, setFilteredData] = useState([]);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -44,7 +48,56 @@ const AdminTransactionList = () => {
     setFilteredData(data);
   };
 
+  const exportToExcel = () => {
+    const exportData = filteredData.map((t) => ({
+      CustomerID: t.customer_id,
+      CustomerName: t.customer_name,
+      Type: t.type,
+      Status: t.status,
+      Amount: t.amount,
+      Description: t.description,
+      Date: new Date(t.created_at).toLocaleString(),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions');
+    XLSX.writeFile(workbook, 'Transactions.xlsx');
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text('Transaction List', 14, 14);
+    const tableColumn = ['Customer ID', 'Name', 'Type', 'Status', 'Amount', 'Description', 'Date'];
+    const tableRows = [];
+
+    filteredData.forEach((t) => {
+      tableRows.push([
+        t.customer_id,
+        t.customer_name,
+        t.type.toUpperCase(),
+        t.status.toUpperCase(),
+        `₹${parseFloat(t.amount).toFixed(2)}`,
+        t.description,
+        new Date(t.created_at).toLocaleString('en-IN'),
+      ]);
+    });
+
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 20,
+    });
+
+    doc.save('Transactions.pdf');
+  };
+
   const columns = [
+    {
+      title: 'S/N',
+      render: (text, record, index) => index + 1,
+      width: 60,
+    },
     {
       title: 'Customer ID',
       dataIndex: 'customer_id',
@@ -56,11 +109,6 @@ const AdminTransactionList = () => {
     {
       title: 'Type',
       dataIndex: 'type',
-      filters: [
-        { text: 'Credit', value: 'credit' },
-        { text: 'Debit', value: 'debit' },
-      ],
-      onFilter: (value, record) => record.type === value,
       render: (type) => (
         <Tag color={type === 'credit' ? 'green' : 'red'}>{type.toUpperCase()}</Tag>
       ),
@@ -68,13 +116,10 @@ const AdminTransactionList = () => {
     {
       title: 'Status',
       dataIndex: 'status',
-      filters: [
-        { text: 'Pending', value: 'pending' },
-        { text: 'Completed', value: 'completed' },
-      ],
-      onFilter: (value, record) => record.status === value,
       render: (status) => (
-        <Tag color={status === 'completed' ? 'green' : 'orange'}>{status.toUpperCase()}</Tag>
+        <Tag color={status === 'completed' ? 'green' : 'orange'}>
+          {status.toUpperCase()}
+        </Tag>
       ),
     },
     {
@@ -103,43 +148,42 @@ const AdminTransactionList = () => {
   ];
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">All Transactions</h2>
+    <div className="p-4 sm:p-6 bg-white rounded shadow-sm min-h-screen">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+        <h2 className="text-xl font-bold text-indigo-700">📒 All Transactions</h2>
 
-      <Row gutter={16} className="mb-4">
-        <Col span={8}>
-          <Input
-            placeholder="Search by Customer ID or Name"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </Col>
-        <Col span={6}>
-          <Select
-            value={typeFilter}
-            onChange={(value) => setTypeFilter(value)}
-            style={{ width: '100%' }}
-          >
-            <Option value="all">All Types</Option>
-            <Option value="credit">Credit</Option>
-            <Option value="debit">Debit</Option>
-          </Select>
-        </Col>
-        <Col span={6}>
-          <Select
-            value={statusFilter}
-            onChange={(value) => setStatusFilter(value)}
-            style={{ width: '100%' }}
-          >
-            <Option value="all">All Status</Option>
-            <Option value="pending">Pending</Option>
-            <Option value="completed">Completed</Option>
-          </Select>
-        </Col>
-      </Row>
+        <div className="flex gap-2 hover:bg-gray-100">
+          <Button icon={<DownloadOutlined />} onClick={exportToExcel}>
+            Export Excel
+          </Button>
+          {/* <Button icon={<DownloadOutlined />} onClick={exportToPDF}>
+            Export PDF
+          </Button> */}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <Input
+          placeholder="🔍 Search by ID or Name"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          allowClear
+        />
+        <Select value={typeFilter} onChange={(value) => setTypeFilter(value)} className="w-full">
+          <Option value="all">All Types</Option>
+          <Option value="credit">Credit</Option>
+          <Option value="debit">Debit</Option>
+        </Select>
+        <Select value={statusFilter} onChange={(value) => setStatusFilter(value)} className="w-full">
+          <Option value="all">All Status</Option>
+          <Option value="pending">Pending</Option>
+          <Option value="completed">Completed</Option>
+        </Select>
+      </div>
 
       {loadingTransactions ? (
-        <div className="text-center py-10">
+        <div className="flex justify-center items-center py-10">
           <Spin size="large" />
         </div>
       ) : (
@@ -148,6 +192,8 @@ const AdminTransactionList = () => {
           dataSource={filteredData}
           rowKey="id"
           pagination={{ pageSize: 10 }}
+          scroll={{ x: 'max-content' }}
+          bordered
         />
       )}
     </div>

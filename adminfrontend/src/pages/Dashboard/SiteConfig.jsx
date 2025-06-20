@@ -13,7 +13,12 @@ import {
     Alert,
     Upload,
 } from 'antd';
-import { InfoCircleOutlined, UploadOutlined } from '@ant-design/icons';
+import {
+    InfoCircleOutlined,
+    UploadOutlined,
+    EditOutlined,
+    EyeOutlined
+} from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import {
     fetchSiteConfig,
@@ -33,12 +38,10 @@ const SiteConfigPage = () => {
     const [logoFile, setLogoFile] = useState(null);
     const [qrFile, setQrFile] = useState(null);
 
-    // Fetch config on mount
     useEffect(() => {
         dispatch(fetchSiteConfig());
     }, [dispatch]);
 
-    // Set form values when config changes
     useEffect(() => {
         if (config && Object.keys(config).length) {
             form.setFieldsValue(config);
@@ -48,7 +51,6 @@ const SiteConfigPage = () => {
         }
     }, [config, form]);
 
-    // Submit handler
     const handleFinish = async (values) => {
         setSubmitting(true);
         try {
@@ -56,7 +58,6 @@ const SiteConfigPage = () => {
             Object.entries(values).forEach(([key, val]) => {
                 if (val) formData.append(key, val);
             });
-
             if (logoFile) formData.append('logo', logoFile);
             if (qrFile) formData.append('qr_image', qrFile);
 
@@ -68,7 +69,6 @@ const SiteConfigPage = () => {
                 Toast.success('Site configuration created');
             }
 
-            // Re-fetch config and reset file uploads
             await dispatch(fetchSiteConfig());
             setLogoFile(null);
             setQrFile(null);
@@ -81,14 +81,17 @@ const SiteConfigPage = () => {
 
     return (
         <div className="p-4 max-w-6xl mx-auto">
-            <Title level={3}>🛠 Site Configuration</Title>
+            <Title level={3} className="flex items-center gap-2">
+                <EditOutlined className="text-blue-500" /> Site Configuration
+            </Title>
+
             <Text type="secondary" className="block mb-6">
-                Configure UPI, support contact, and public info. Fields marked with * are required.
+                Configure UPI, support contact, and branding details. Fields marked with * are required.
             </Text>
 
             <Alert
                 message="💡 Note"
-                description="QR Code and Logo images are required for public pages."
+                description="QR Code and Logo images appear on public pages."
                 type="info"
                 showIcon
                 className="mb-6"
@@ -115,13 +118,13 @@ const SiteConfigPage = () => {
                         <Input placeholder="example@upi" />
                     </Form.Item>
 
-                    <Form.Item
+                    {/* <Form.Item
                         label="UPI Name"
                         name="upi_name"
                         rules={[{ required: true, message: 'Name is required' }]}
                     >
                         <Input placeholder="UPI Account Holder Name" />
-                    </Form.Item>
+                    </Form.Item> */}
 
                     <Form.Item
                         label="Site Name"
@@ -138,22 +141,30 @@ const SiteConfigPage = () => {
                                 return false;
                             }}
                             maxCount={1}
+                            showUploadList={false}
                         >
                             <Button icon={<UploadOutlined />}>Upload QR Code</Button>
                         </Upload>
+                        {config?.qr_image_url && (
+                            <img
+                                src={config.qr_image_url}
+                                alt="QR Code"
+                                className="mt-2 w-32 h-32 object-contain border rounded"
+                            />
+                        )}
                     </Form.Item>
 
                     <Divider className="md:col-span-2">📞 Contact Details</Divider>
 
                     <Form.Item
-                        label="Email Address"
-                        name="email"
+                        label="Support Email"
+                        name="support_email"
                         rules={[{ type: 'email', message: 'Enter a valid email' }]}
                     >
                         <Input placeholder="support@example.com" />
                     </Form.Item>
 
-                    <Form.Item label="Phone Number" name="phone_number">
+                    <Form.Item label="Support Phone" name="support_phone">
                         <Input placeholder="+91XXXXXXXXXX" />
                     </Form.Item>
 
@@ -178,9 +189,17 @@ const SiteConfigPage = () => {
                                 return false;
                             }}
                             maxCount={1}
+                            showUploadList={false}
                         >
                             <Button icon={<UploadOutlined />}>Upload Logo</Button>
                         </Upload>
+                        {config?.logo_url && (
+                            <img
+                                src={config.logo_url}
+                                alt="Logo"
+                                className="mt-2 w-24 h-24 object-contain border rounded"
+                            />
+                        )}
                     </Form.Item>
 
                     <div className="md:col-span-2 text-right">
@@ -199,21 +218,22 @@ const SiteConfigPage = () => {
 
             {config && Object.keys(config).length > 0 && (
                 <Card
-                    title="🔍 Current Configuration Preview"
+                    title={<span className="flex items-center gap-2 text-blue-600"><EyeOutlined className='hover:text-gray-300' /> Current Configuration Preview</span>}
                     className="mt-10 shadow-lg border rounded-lg"
                 >
                     <Row gutter={[16, 16]}>
-                        <Col xs={24} sm={12}><strong>UPI ID:</strong> {config.upi_id}</Col>
-                        <Col xs={24} sm={12}><strong>UPI Name:</strong> {config.upi_name}</Col>
-                        <Col xs={24} sm={12}><strong>Email:</strong> {config.email}</Col>
-                        <Col xs={24} sm={12}><strong>Phone:</strong> {config.phone_number}</Col>
-                        <Col xs={24} sm={12}><strong>Website Title:</strong> {config.site_title}</Col>
-                        <Col xs={24}><strong>Support Info:</strong> <br /><span dangerouslySetInnerHTML={{ __html: config.support_info }} /></Col>
+                        <Col xs={24} sm={12}><strong>UPI ID:</strong> {config.upi_id || '-'}</Col>
+                        {/* <Col xs={24} sm={12}><strong>UPI Name:</strong> {config.upi_name || '-'}</Col> */}
+                        <Col xs={24} sm={12}><strong>Support Email:</strong> {config.support_email || '-'}</Col>
+                        <Col xs={24} sm={12}><strong>Support Phone:</strong> {config.support_phone || '-'}</Col>
+                        <Col xs={24} sm={12}><strong>Site Name:</strong> {config.site_name || '-'}</Col>
+                        <Col xs={24} sm={12}><strong>Website Title:</strong> {config.site_title || '-'}</Col>
+                        <Col xs={24}><strong>Support Info:</strong><br /><span dangerouslySetInnerHTML={{ __html: config.support_info || '-' }} /></Col>
                         {config.qr_image_url && (
-                            <Col xs={24}><img src={config.qr_image_url} alt="QR Code" title='QR Code' className="w-40 h-40 object-contain border rounded" /></Col>
+                            <Col xs={24}><strong>QR Code:</strong><br /><img src={config.qr_image_url} alt="QR Code" className="w-40 h-40 object-contain border rounded mt-2" /></Col>
                         )}
                         {config.logo_url && (
-                            <Col xs={24}><img src={config.logo_url} alt="Logo" className="w-32 h-32 object-contain border rounded" /></Col>
+                            <Col xs={24}><strong>Logo:</strong><br /><img src={config.logo_url} alt="Logo" className="w-32 h-32 object-contain border rounded mt-2" /></Col>
                         )}
                     </Row>
                 </Card>

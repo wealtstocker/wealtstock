@@ -11,20 +11,20 @@ const DashboardLayout = () => {
   const handleSidebarClose = () => setSidebarOpen(false);
 
   return (
-    <div className="min-h-screen flex bg-gray-50 relative overflow-x-hidden">
+    <div className="min-h-screen md:flex bg-gray-50 relative overflow-x-hidden">
       {/* Sidebar */}
       <DashboardSidebar isOpen={isSidebarOpen} onClose={handleSidebarClose} />
 
       {/* Main Area */}
      <div
-        className={`flex-1 transition-all duration-600 ease-in-out ${isSidebarOpen ? "ml-1 md:ml-72" : "ml-0"
+        className={`md:flex-1 transition-all duration-600 ease-in-out ${isSidebarOpen ? "ml-1 md:ml-72" : "ml-0"
           }`}
       >
         <DashboardHeader
           onMenuClick={handleSidebarToggle}
           isSidebarOpen={isSidebarOpen}
         />
-        <main className="pt-16 mt-3 min-h-screen">
+       <main className="pt-20 px-4 md:px-6 pb-10">
           <BreadcrumbNav />
           <Outlet />
         </main>

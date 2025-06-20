@@ -119,10 +119,10 @@ export default function Burnar() {
       {/* WhatsApp Button */}
       <a
         ref={whatsappRef}
-        href="https://wa.me/916265861847?text=Hello!%20I'm%20interested%20in%20learning%20more%20about%20your%20trading%20and%20investment%20services%20at%20Finance%20India%20Firm.%20Please%20guide%20me."
+        href="https://wa.me/919755320099?text=Hello!%20I'm%20interested%20in%20learning%20more%20about%20your%20trading%20and%20investment%20services%20at%20Finance%20India%20Firm.%20Please%20guide%20me."
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-24 left-4 bg-green-500 p-3 rounded-full shadow-lg z-50 hover:scale-110 transition-transform"
+        className="fixed bottom-8 left-4 bg-green-500 p-3 rounded-full shadow-lg z-50 hover:scale-110 transition-transform"
         title="Chat on WhatsApp"
       >
         <FaWhatsapp className="text-white text-xl" />
@@ -131,7 +131,7 @@ export default function Burnar() {
       {/* Phone Button */}
       <a
         ref={phoneRef}
-        href="tel:+916265861847"
+        href="tel:+919755320099"
         className="fixed bottom-8 right-4 bg-blue-600 p-3 rounded-full shadow-lg z-50 hover:scale-110 transition-transform"
         title="Call Finance India Firm"
       >

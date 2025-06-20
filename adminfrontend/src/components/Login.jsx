@@ -62,9 +62,10 @@ const handleLogin = async () => {
     const res = await dispatch(loginAdmin({ email, password })).unwrap();
     toast.success(res.message); 
     localStorage.setItem("admin", JSON.stringify(res.user));
-    
+    // console.log("login",res)
     navigate("/admin/dashboard");
   } catch (err) {
+    console.error(err)
     toast.error(err.message || "Invalid credentials");
   }
 };

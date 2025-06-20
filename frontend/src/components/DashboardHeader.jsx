@@ -14,25 +14,25 @@ const DashboardHeader = ({ onMenuClick, isSidebarOpen }) => {
   const [showDropdown, setShowDropdown] = useState(false);
 
   const { balance, loading } = useSelector((state) => state.wallet);
-const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null);
 
-// Get user data from localStorage on component mount
-useEffect(() => {
-  const storedUser = localStorage.getItem("user");
-  if (storedUser) {
-    try {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-    } catch (error) {
-      console.error("Error parsing user data:", error);
-      setUser(null);
+  // Get user data from localStorage on component mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        setUser(null);
+      }
     }
-  }
-}, []);
+  }, []);
 
 
   useEffect(() => {
-    dispatch(fetchWalletBalance()); 
+    dispatch(fetchWalletBalance());
   }, [dispatch]);
 
   useEffect(() => {
@@ -54,18 +54,21 @@ useEffect(() => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+const handleLogout = () => {
+  const name = user?.full_name || "User";
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate("/login");
-  };
+  toast.success(`👋 ${name}, you have logged out successfully!`, {
+    position: "top-right",
+  });
 
+  dispatch(logout());
+  navigate("/");
+};
   return (
     <div
       ref={headerRef}
-      className={`fixed top-0 left-0 right-0 z-40 bg-white shadow-md transition-all duration-300 ${
-        isSidebarOpen ? "pl-0 md:pl-72" : "ml-0.5"
-      }`}
+      className={`fixed top-0 left-0 right-0 z-40 bg-white shadow-md transition-all duration-300 ${isSidebarOpen ? "pl-0 md:pl-72" : "ml-0.5"
+        }`}
     >
       <div className="flex justify-between items-center px-4 py-3">
         <div className="flex items-center gap-3">
@@ -75,9 +78,9 @@ useEffect(() => {
               onClick={onMenuClick}
             />
           )}
-        <h2 className="text-lg md:text-xl font-semibold">
-  Welcome {user?.full_name ? user.full_name : ""}
-</h2>
+          <h2 className="text-lg md:text-xl font-semibold">
+            Welcome {user?.full_name ? user.full_name : ""}
+          </h2>
         </div>
 
         <div className="flex items-center gap-6 relative">

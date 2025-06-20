@@ -6,7 +6,7 @@ import {
   requestWithdrawal,
   getMyWithdrawals,
   getPendingWithdrawals,
-  processWithdrawal,
+  // processWithdrawal,
   // getMyTransactions,
   // getAllTransactions,
   addFundRequest,
@@ -19,6 +19,7 @@ import {
   getMyFundRequests,
   getPendingFundRequests,
   getApprovedFundRequests,
+  getAllWithdrawals,
 } from "../controllers/walletNtransactionController.js";
 
 import { authenticate } from "../middlewares/authMiddleware.js";
@@ -46,12 +47,14 @@ router.get("/fund-requests/pending", authenticate, authorizeRoles("admin", "supe
 router.get("/fund-requests/approved", authenticate, authorizeRoles("admin", "superadmin"), getApprovedFundRequests);
 
 router.put("/admin/topup",  authenticate, authorizeRoles("admin", "superadmin") ,topUpWallet);
-router.get("/pending-withdrawals", getPendingWithdrawals);
-router.put("/process-withdrawal",  processWithdrawal);
+// router.put("/process-withdrawal",  processWithdrawal);
 router.get("/all-balances", getAllUserBalances);
 router.get("/all-transactions", getAllTransactions);
 
+router.get("/pending-withdrawals", authenticate, authorizeRoles("admin", "superadmin"), getPendingWithdrawals);
+router.get("/all-withdrawals", authenticate, authorizeRoles("admin", "superadmin"), getAllWithdrawals);
+router.patch("/withdrawal/status", authenticate, authorizeRoles("admin", "superadmin"),  updateWithdrawalStatus);
+
 router.patch("/fund-request/status", authenticate, authorizeRoles("admin", "superadmin"), updateFundRequestStatus);
-router.patch("/withdrawal/status",   updateWithdrawalStatus);
 
 export default router;

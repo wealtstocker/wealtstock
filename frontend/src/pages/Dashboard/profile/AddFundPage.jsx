@@ -73,6 +73,7 @@ const AddFundPage = () => {
             <img
               src={config.qr_image_url}
               alt="UPI QR Code"
+               crossOrigin="anonymous"
               className="w-32 h-32 mx-auto object-contain border"
             />
           ) : (

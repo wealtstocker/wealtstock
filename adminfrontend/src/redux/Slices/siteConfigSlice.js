@@ -8,7 +8,7 @@ export const fetchSiteConfig = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await axiosInstance.get('/site-config');
-      console.log(res)
+
       return res.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Fetch failed');

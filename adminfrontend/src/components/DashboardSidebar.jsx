@@ -100,6 +100,11 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
           label: "Transactions",
           url: "/admin/transactions",
         },
+        {
+          icon: <CreditCard size={18} />,
+          label: "Withdrawal",
+          url: "/admin/withdrawal",
+        },
         
       ],
     },
@@ -108,8 +113,8 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
       items: [
         {
           icon: <Banknote size={18} />,
-          label: "Deposit Funds",
-          url: "/admin/fund-request/deposit",
+          label: "All User Funds",
+          url: "/admin/all-wallet",
         },
         {
           icon: <ArrowDownCircle size={18} />,
@@ -126,16 +131,16 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
     {
       section: "Finance",
       items: [
+        // {
+        //   icon: <BsBank size={18} />,
+        //   label: "Bank Accounts",
+        //  url: "/admin/site-config",
+        // },
         {
           icon: <BsBank size={18} />,
-          label: "Bank Accounts",
-         url: "/admin/site-config",
+          label: "Site Config",
+          url: "/admin/site-config",
         },
-        // {
-        //   icon: <QrCode size={18} />,
-        //   label: "Site Config",
-        //   url: "/admin/site-config",
-        // },
       ],
     },
     {

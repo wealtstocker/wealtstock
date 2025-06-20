@@ -12,6 +12,8 @@ import AdminFundRequestList from "../pages/Dashboard/fund/AdminFundRequestList";
 import AdminTransactionList from "../pages/Dashboard/fund/AdminTransactionList";
 import SiteConfigPage from "../pages/Dashboard/SiteConfig";
 import AdminRegisterPage from "../components/AdminRegisterPage";
+import AdminWithdrawalList from "../pages/Dashboard/fund/WithdrawalListPage";
+import AdminWalletManager from "../pages/Dashboard/fund/AdminWalletManager";
 
 const AppRoutes = () => {
   return (
@@ -30,6 +32,8 @@ const AppRoutes = () => {
         <Route path="trades/edit/:id" element={<TradeForm />} />
         <Route path="fund-requests" element={<AdminFundRequestList />} />
         <Route path="transactions" element={<AdminTransactionList />} />
+        <Route path="withdrawal" element={<AdminWithdrawalList />} />
+        <Route path="all-wallet" element={<AdminWalletManager />} />
         <Route path="site-config" element={<SiteConfigPage />} />
 
       </Route>

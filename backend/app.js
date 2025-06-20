@@ -15,17 +15,7 @@ import customersRouter from "./routes/customerRouter.js";
 
 const app = express();
 app.use(helmet());
-// CORS middleware
-// app.use(
-//   cors({
-//     origin: [
-//       "https://wealtstockresearchfirm.com",
-//       "https://admin.wealtstockresearchfirm.com",
 
-//     ],
-//     credentials: true,
-//   })
-// );
 console.log(process.env.USER_FRONTEND, process.env.ADMIN_FRONTEND,)
 app.use(
   cors({

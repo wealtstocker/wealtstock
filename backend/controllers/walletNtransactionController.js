@@ -144,16 +144,35 @@ export async function getMyWallet(req, res) {
 }
 
 // ✅ User Withdraw History
+
 export async function getMyWithdrawals(req, res) {
-  const customerId = req.user.id;
+  const customerId = req.user.id; // 👈 Authenticated customer
+  const { status } = req.query;
+
+  let query = `
+    SELECT w.id, w.amount, w.status, w.created_at, w.updated_at,
+           t.status AS transaction_status, cb.account_number
+    FROM withdrawals w
+    JOIN transactions t ON w.transaction_id = t.id
+    LEFT JOIN customer_bank_accounts cb ON cb.id = w.bank_account_id
+    WHERE w.customer_id = ?
+  `;
+
+  const params = [customerId];
+
+  if (status) {
+    query += " AND w.status = ?";
+    params.push(status);
+  }
+
+  query += " ORDER BY w.created_at DESC";
+
   try {
-    const [rows] = await pool.query(
-      "SELECT * FROM withdrawals WHERE customer_id = ? ORDER BY created_at DESC",
-      [customerId]
-    );
-    res.json({ withdrawals: rows });
+    const [rows] = await pool.query(query, params);
+    res.status(200).json(rows);
   } catch (err) {
-    res.status(500).json({ message: "Error fetching withdrawals", error: err.message });
+    console.error("Get customer withdrawals error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 }
 
@@ -364,122 +383,57 @@ export async function getAllUserBalances(req, res) {
   }
 }
 
-// ✅ Admin Process Withdrawal
-export async function processWithdrawal(req, res) {
-  const { withdrawal_id } = req.body;
 
-  if (!withdrawal_id) {
-    return res.status(400).json({ message: "Missing withdrawal_id" });
+// ✅ Admin Update Fund Status
+export const updateFundRequestStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  try {
+    await pool.query("UPDATE fund_requests SET status = ? WHERE id = ?", [status, id]);
+    res.status(200).json({ status: true, message: `Fund request ${id} status updated to ${status}`, data: { id, status } });
+  } catch (error) {
+    res.status(500).json({ status: false, message: "Failed to update fund request status", error: error.message });
+  }
+};
+
+export async function getAllWithdrawals(req, res) {
+  const { status } = req.query;
+
+  let query = `
+    SELECT 
+      w.id AS withdrawal_id, 
+      w.amount, 
+      w.status, 
+      w.created_at, 
+      w.updated_at,
+      c.id AS customer_id, 
+      c.full_name, 
+      c.email,
+      t.status AS transaction_status
+    FROM withdrawals w
+    JOIN customers c ON w.customer_id = c.id
+    JOIN transactions t ON w.transaction_id = t.id
+  `;
+
+  const params = [];
+
+  if (status) {
+    query += " WHERE w.status = ?";
+    params.push(status);
   }
 
-  const connection = await pool.getConnection();
+  query += " ORDER BY w.created_at DESC";
+
   try {
-    await connection.beginTransaction();
-
-    // ✅ Step 1: Fetch and lock withdrawal row
-    const [[withdrawal]] = await connection.query(
-      "SELECT * FROM withdrawals WHERE id = ? AND status = 'requested' FOR UPDATE",
-      [withdrawal_id]
-    );
-    if (!withdrawal) {
-      await connection.rollback();
-      return res.status(404).json({ message: "Withdrawal not found or already processed" });
-    }
-
-    // ✅ Step 2: Lock and fetch current wallet balance
-    const [[wallet]] = await connection.query(
-      "SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE",
-      [withdrawal.customer_id]
-    );
-
-    const currentBalance = Number(wallet?.balance || 0);
-    const withdrawalAmount = Number(withdrawal.amount);
-
-    if (currentBalance < withdrawalAmount) {
-      await connection.rollback();
-      return res.status(400).json({ message: "Insufficient funds" });
-    }
-
-    const newBalance = Math.round((currentBalance - withdrawalAmount) * 100) / 100;
-
-    // ✅ Step 3: Update transaction status
-    await connection.query(
-      "UPDATE transactions SET status = 'completed', description = 'Withdrawal approved' WHERE id = ?",
-      [withdrawal.transaction_id]
-    );
-
-    // ✅ Step 4: Insert new wallet entry
-    await connection.query(
-      `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id, updated_at)
-       VALUES (?, ?, 'debit', ?, ?, NOW())`,
-      [withdrawal.customer_id, withdrawalAmount, newBalance, withdrawal.transaction_id]
-    );
-
-    // ✅ Step 5: Mark withdrawal as completed
-    await connection.query(
-      "UPDATE withdrawals SET status = 'completed', updated_at = NOW() WHERE id = ?",
-      [withdrawal_id]
-    );
-
-    await connection.commit();
-
-    res.status(200).json({
-      message: "✅ Withdrawal processed successfully",
-      new_balance: newBalance,
-    });
+    const [rows] = await pool.query(query, params);
+    res.status(200).json(rows);
   } catch (err) {
-    await connection.rollback();
-    console.error("❌ Error processing withdrawal:", err.message);
-    res.status(500).json({ message: "Withdrawal processing error", error: err.message });
-  } finally {
-    connection.release();
+    console.error("Get withdrawals error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 }
 
-
-
-// ✅ Admin All Transactions
-export const getAllTransactionssearch = async (req, res) => {
-  const { page = 1, limit = 20, search = "" } = req.query;
-
-  const offset = (page - 1) * limit;
-
-  try {
-    const [rows] = await pool.query(
-      `
-      SELECT 
-        t.*, 
-        c.name AS customer_name, 
-        c.email AS customer_email 
-      FROM transactions t
-      JOIN customers c ON c.id = t.customer_id
-      WHERE c.name LIKE ? OR c.email LIKE ? OR t.description LIKE ?
-      ORDER BY t.created_at DESC
-      LIMIT ? OFFSET ?
-      `,
-      [`%${search}%`, `%${search}%`, `%${search}%`, Number(limit), Number(offset)]
-    );
-
-    const [[{ count }]] = await pool.query(
-      `
-      SELECT COUNT(*) as count
-      FROM transactions t
-      JOIN customers c ON c.id = t.customer_id
-      WHERE c.name LIKE ? OR c.email LIKE ? OR t.description LIKE ?
-      `,
-      [`%${search}%`, `%${search}%`, `%${search}%`]
-    );
-
-    res.json({
-      total: count,
-      page: Number(page),
-      limit: Number(limit),
-      transactions: rows,
-    });
-  } catch (err) {
-    res.status(500).json({ message: "Error loading transactions", error: err.message });
-  }
-};
 
 // ✅ Admin Pending Withdrawals
 export async function getPendingWithdrawals(req, res) {
@@ -498,150 +452,90 @@ export async function getPendingWithdrawals(req, res) {
   }
 }
 
-
-// ✅ Admin Fund Filter by status/date
-export async function filterFundRequests(req, res) {
-  const { status, from, to } = req.query;
-
-  let conditions = [];
-  let values = [];
-
-  if (status) {
-    conditions.push("f.status = ?");
-    values.push(status);
-  }
-
-  if (from && to) {
-    conditions.push("DATE(f.created_at) BETWEEN ? AND ?");
-    values.push(from, to);
-  }
-
-  const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-
-  try {
-    const [rows] = await pool.query(
-      `SELECT f.*, u.full_name, u.email 
-       FROM add_funds f
-       JOIN users u ON f.customer_id = u.uuid
-       ${whereClause}
-       ORDER BY f.created_at DESC`,
-      values
-    );
-
-    res.status(200).json({
-      message: "Filtered fund requests fetched",
-      data: rows,
-    });
-  } catch (err) {
-    console.error("❌ Filter fund error:", err.message);
-    res.status(500).json({ message: "Failed to filter fund requests" });
-  }
-}
-
-// ✅ Admin Update Fund Status
-export const updateFundRequestStatus = async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-
-  try {
-    await pool.query("UPDATE fund_requests SET status = ? WHERE id = ?", [status, id]);
-    res.status(200).json({ status: true, message: `Fund request ${id} status updated to ${status}`, data: { id, status } });
-  } catch (error) {
-    res.status(500).json({ status: false, message: "Failed to update fund request status", error: error.message });
-  }
-};
-
-// ✅ Admin: Process or Reject Withdrawal
 export async function updateWithdrawalStatus(req, res) {
-  const { withdrawal_id, status } = req.body;
+  const { withdrawal_id, action } = req.body;
 
-  // ✅ Validate status input
-  const validStatuses = ["approved", "rejected", "pending"];
-  if (!validStatuses.includes(status)) {
-    return res.status(400).json({ message: "❌ Invalid status value" });
+  if (!withdrawal_id || !['approve', 'reject'].includes(action)) {
+    return res.status(400).json({ message: "Invalid input" });
   }
 
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
 
-    // ✅ Step 1: Fetch withdrawal
     const [[withdrawal]] = await connection.query(
-      "SELECT * FROM withdrawals WHERE id = ?",
+      `SELECT * FROM withdrawals WHERE id = ? FOR UPDATE`,
       [withdrawal_id]
     );
+
     if (!withdrawal) {
       await connection.rollback();
-      return res.status(404).json({ message: "❌ Withdrawal not found" });
+      return res.status(404).json({ message: "Withdrawal not found" });
     }
 
-    const customerId = withdrawal.customer_id;
-    const amount = parseFloat(withdrawal.amount);
-    const txId = withdrawal.transaction_id;
+    if (withdrawal.status !== 'requested') {
+      await connection.rollback();
+      return res.status(400).json({ message: "Withdrawal already processed" });
+    }
 
-    // ✅ Step 2: Handle "approved"
-    if (status === "approved") {
-      if (["completed", "approved", "rejected"].includes(withdrawal.status)) {
+    const [[wallet]] = await connection.query(
+      `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE`,
+      [withdrawal.customer_id]
+    );
+
+    const currentBalance = Number(wallet?.balance || 0);
+    const withdrawalAmount = Number(withdrawal.amount);
+
+    if (action === 'approve') {
+      if (currentBalance < withdrawalAmount) {
         await connection.rollback();
-        return res.status(400).json({ message: "⚠️ Withdrawal already processed" });
+        return res.status(400).json({ message: "Insufficient funds" });
       }
 
-      const [[wallet]] = await connection.query(
-        "SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE",
-        [customerId]
-      );
-
-      const currentBalance = parseFloat(wallet?.balance || 0);
-      if (currentBalance < amount) {
-        await connection.rollback();
-        return res.status(400).json({ message: "❌ Insufficient balance" });
-      }
-
-      const newBalance = Math.round((currentBalance - amount) * 100) / 100;
+      const newBalance = currentBalance - withdrawalAmount;
 
       // Update transaction
-      await connection.query(
-        "UPDATE transactions SET status = 'completed', description = 'Withdrawal Approved' WHERE id = ?",
-        [txId]
-      );
+      // await connection.query(
+      //   `UPDATE transactions SET status = 'completed', description = 'Withdrawal approved' WHERE id = ?`,
+      //   [withdrawal.transaction_id]
+      // );
 
-      // Insert wallet record
+      // Debit from wallet
       await connection.query(
-        `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id, created_at)
+        `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id, updated_at)
          VALUES (?, ?, 'debit', ?, ?, NOW())`,
-        [customerId, amount, newBalance, txId]
+        [withdrawal.customer_id, withdrawalAmount, newBalance, withdrawal.transaction_id]
       );
 
-      // Update withdrawal
+      // Update withdrawal status
       await connection.query(
-        "UPDATE withdrawals SET status = 'completed', updated_at = NOW() WHERE id = ?",
+        `UPDATE withdrawals SET status = 'completed', updated_at = NOW() WHERE id = ?`,
         [withdrawal_id]
       );
 
       await connection.commit();
-      return res.status(200).json({ message: "✅ Withdrawal approved and processed", new_balance: newBalance });
+      return res.status(200).json({ message: "Withdrawal approved", new_balance: newBalance });
     }
 
-    // ❌ Step 3: Handle "rejected"
-    if (status === "rejected") {
-      await connection.query("UPDATE transactions SET status = 'rejected', description = 'Withdrawal Rejected' WHERE id = ?", [txId]);
-      await connection.query("UPDATE withdrawals SET status = 'rejected', updated_at = NOW() WHERE id = ?", [withdrawal_id]);
+    if (action === 'reject') {
+      // Just mark transaction and withdrawal as rejected
+      await connection.query(
+        `UPDATE transactions SET status = 'rejected', description = 'Withdrawal rejected' WHERE id = ?`,
+        [withdrawal.transaction_id]
+      );
+
+      await connection.query(
+        `UPDATE withdrawals SET status = 'rejected', updated_at = NOW() WHERE id = ?`,
+        [withdrawal_id]
+      );
+
       await connection.commit();
-      return res.status(200).json({ message: "🚫 Withdrawal rejected" });
+      return res.status(200).json({ message: "Withdrawal rejected" });
     }
-
-    // ⏳ Step 4: Handle "pending"
-    if (status === "pending") {
-      await connection.query("UPDATE transactions SET status = 'pending', description = 'Withdrawal Pending' WHERE id = ?", [txId]);
-      await connection.query("UPDATE withdrawals SET status = 'requested', updated_at = NOW() WHERE id = ?", [withdrawal_id]);
-      await connection.commit();
-      return res.status(200).json({ message: "🔄 Withdrawal reset to pending" });
-    }
-
   } catch (err) {
     await connection.rollback();
-    console.error("❌ Error updating withdrawal status:", err.message);
-    return res.status(500).json({ message: "Internal server error", error: err.message });
+    console.error("Update withdrawal error:", err.message);
+    res.status(500).json({ message: "Server error", error: err.message });
   } finally {
     connection.release();
   }

@@ -1,52 +1,54 @@
-// src/redux/Slices/walletSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "../../lib/axiosInstance";
 
-export const fetchWalletBalance = createAsyncThunk("wallet/fetchBalance", async () => {
-  const res = await axiosInstance.get("/wallet/balance");
-  return res.data.balance;
+// Get all user balances
+export const fetchAllBalances = createAsyncThunk("wallet/fetchAll", async (_, thunkAPI) => {
+  try {
+    const res = await axiosInstance.get("/wallet/all-balances");
+    return res.data.balances;
+  } catch (err) {
+    return thunkAPI.rejectWithValue(err.response?.data?.message || "Fetch failed");
+  }
 });
 
-export const fetchApprovedTrades = createAsyncThunk("wallet/fetchApprovedTrades", async () => {
-  const res = await axiosInstance.get("/trade");
-  const approvedTrades = res.data.filter((trade) => trade.status === "approved");
-  return approvedTrades.length;
-});
-
-export const fetchWalletHistory = createAsyncThunk("wallet/fetchWalletHistory", async () => {
-  const res = await axiosInstance.get("/wallet/wallet-history");
-  return res.data.data;
+// Top up or debit a wallet
+export const updateWalletBalance = createAsyncThunk("wallet/update", async (payload, thunkAPI) => {
+  try {
+    const res = await axiosInstance.post("/wallet/topup", payload);
+    return res.data;
+  } catch (err) {
+    return thunkAPI.rejectWithValue(err.response?.data?.message || "Update failed");
+  }
 });
 
 const walletSlice = createSlice({
   name: "wallet",
   initialState: {
-    balance: 0,
-    approvedTrades: 0,
-    walletHistory: [],
+    balances: [],
     loading: false,
     error: null,
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchWalletBalance.pending, (state) => {
+      .addCase(fetchAllBalances.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchWalletBalance.fulfilled, (state, action) => {
+      .addCase(fetchAllBalances.fulfilled, (state, action) => {
         state.loading = false;
-        state.balance = action.payload;
+        state.balances = action.payload;
       })
-      .addCase(fetchWalletBalance.rejected, (state, action) => {
+      .addCase(fetchAllBalances.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
+        state.error = action.payload;
       })
-      .addCase(fetchApprovedTrades.fulfilled, (state, action) => {
-        state.approvedTrades = action.payload;
-      })
-      .addCase(fetchWalletHistory.fulfilled, (state, action) => {
-        state.walletHistory = action.payload;
+      .addCase(updateWalletBalance.fulfilled, (state, action) => {
+        const { transaction_id, new_balance } = action.payload;
+        const index = state.balances.findIndex((b) => b.customer_id === action.meta.arg.customerId);
+        if (index !== -1) {
+          state.balances[index].balance = new_balance;
+        }
       });
   },
 });

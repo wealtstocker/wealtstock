@@ -149,6 +149,7 @@ const SiteConfigPage = () => {
                             <img
                                 src={config.qr_image_url}
                                 alt="QR Code"
+                                 crossOrigin="anonymous"
                                 className="mt-2 w-32 h-32 object-contain border rounded"
                             />
                         )}
@@ -230,7 +231,7 @@ const SiteConfigPage = () => {
                         <Col xs={24} sm={12}><strong>Website Title:</strong> {config.site_title || '-'}</Col>
                         <Col xs={24}><strong>Support Info:</strong><br /><span dangerouslySetInnerHTML={{ __html: config.support_info || '-' }} /></Col>
                         {config.qr_image_url && (
-                            <Col xs={24}><strong>QR Code:</strong><br /><img src={config.qr_image_url} alt="QR Code" className="w-40 h-40 object-contain border rounded mt-2" /></Col>
+                            <Col xs={24}><strong>QR Code:</strong><br /><img src={config.qr_image_url}  crossOrigin="anonymous" alt="QR Code" className="w-40 h-40 object-contain border rounded mt-2" /></Col>
                         )}
                         {config.logo_url && (
                             <Col xs={24}><strong>Logo:</strong><br /><img src={config.logo_url} alt="Logo" className="w-32 h-32 object-contain border rounded mt-2" /></Col>

@@ -107,7 +107,7 @@ const LoginPage = () => {
       <div className="flex flex-col md:flex-row w-full max-w-5xl shadow-2xl rounded-xl overflow-hidden bg-white">
         {/* Left Image */}
         <div className="md:w-1/2 hidden md:block">
-          <img src={loginImg} alt="Login" className="w-full h-full object-cover" />
+          <img src={loginImg}  crossOrigin="anonymous" alt="Login" className="w-full h-full object-cover" />
         </div>
 
         {/* Right Form */}

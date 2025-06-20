@@ -103,7 +103,7 @@ const AdminFundRequestList = () => {
     //   render: (src) =>
     //     src ? (
     //       <a href={`/${src}`} target="_blank" rel="noreferrer">
-    //         <img src={`/${src}`} alt="screenshot" width={50} height={50} />
+    //         <img src={`/${src}`}  crossOrigin="anonymous" alt="screenshot" width={50} height={50} />
     //       </a>
     //     ) : (
     //       'N/A'

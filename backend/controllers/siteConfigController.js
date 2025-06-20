@@ -2,9 +2,21 @@
 import pool from "../config/db.js";
 
 // Helper: convert uploaded file to full URL
+// const fileToUrl = (req, field) => {
+//   console.log(req.get("host"));
+//   if (req.files && req.files[field] && req.files[field][0]) {
+//     return `${req.protocol}://${req.get("host")}/uploads/site/${
+//       req.files[field][0].filename
+//     }`;
+//   }
+//   return null;
+// };
+
 const fileToUrl = (req, field) => {
   if (req.files && req.files[field] && req.files[field][0]) {
-    return `${req.protocol}://${req.get("host")}/uploads/site/${req.files[field][0].filename}`;
+    const filename = req.files[field][0].filename;
+    const baseUrl = `${process.env.PUBLIC_UPLOADS_URL}/uploads/site`; // e.g., https://yourdomain.com/uploads/site
+    return `${baseUrl}/${filename}`;
   }
   return null;
 };
@@ -27,17 +39,29 @@ export const createSiteConfig = async (req, res) => {
   const logo_url = fileToUrl(req, "logo");
 
   if (!upi_id || !qr_image_url) {
-    return res.status(400).json({ message: "UPI ID and QR Image are required" });
+    return res
+      .status(400)
+      .json({ message: "UPI ID and QR Image are required" });
   }
 
   try {
-    await pool.query(
+    const data = await pool.query(
       `INSERT INTO site_config (
         site_name, upi_id, qr_image_url, logo_url, support_email, support_phone, address
       ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [site_name, upi_id, qr_image_url, logo_url, support_email, support_phone, address]
+      [
+        site_name,
+        upi_id,
+        qr_image_url,
+        logo_url,
+        support_email,
+        support_phone,
+        address,
+      ]
     );
-    res.status(201).json({ message: "Site config created successfully" });
+    res
+      .status(201)
+      .json({ message: "Site config created successfully", data: data });
   } catch (error) {
     res.status(500).json({ message: "Error creating config", error });
   }
@@ -57,10 +81,13 @@ export const updateSiteConfig = async (req, res) => {
 
     if (site_name) fields.push("site_name = ?"), values.push(site_name);
     if (upi_id) fields.push("upi_id = ?"), values.push(upi_id);
-    if (support_email) fields.push("support_email = ?"), values.push(support_email);
-    if (support_phone) fields.push("support_phone = ?"), values.push(support_phone);
+    if (support_email)
+      fields.push("support_email = ?"), values.push(support_email);
+    if (support_phone)
+      fields.push("support_phone = ?"), values.push(support_phone);
     if (address) fields.push("address = ?"), values.push(address);
-    if (qr_image_url) fields.push("qr_image_url = ?"), values.push(qr_image_url);
+    if (qr_image_url)
+      fields.push("qr_image_url = ?"), values.push(qr_image_url);
     if (logo_url) fields.push("logo_url = ?"), values.push(logo_url);
 
     if (fields.length === 0) {
@@ -70,8 +97,8 @@ export const updateSiteConfig = async (req, res) => {
     values.push(id);
     const sql = `UPDATE site_config SET ${fields.join(", ")} WHERE id = ?`;
 
-    await pool.query(sql, values);
-    res.json({ message: "Site config updated successfully" });
+    const data = await pool.query(sql, values);
+    res.json({ message: "Site config updated successfully", data: data });
   } catch (error) {
     res.status(500).json({ message: "Error updating config", error });
   }

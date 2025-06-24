@@ -26,7 +26,6 @@ const ExtendedRegisterForm = () => {
     password: "",
     confirm_password: "",
     address: "",
-    is_active: 1,
   });
 
   const [document, setDocument] = useState(null);
@@ -91,14 +90,15 @@ const ExtendedRegisterForm = () => {
 
     try {
       const res = await dispatch(registerCustomer(form)).unwrap();
-      console.log("response -------", res);
+      // console.log("response -------", res);
       Swal.fire({
         toast: true,
         position: "top-end",
-        icon: "success",
+        icon: "info",
         title: res.message || "Registered successfully",
+    text: "Your account will be verified within 24 hours. Please wait.",
         showConfirmButton: false,
-        timer: 4000,
+        timer: 5000,
         timerProgressBar: true,
       });
       setFormData({
@@ -115,10 +115,10 @@ const ExtendedRegisterForm = () => {
         password: "",
         confirm_password: "",
         address: "",
-        is_active: 1,
+        is_active: "false",
       });
       setDocument(null);
-      navigate("/login");
+      navigate("/");
     } catch (err) {
       console.error("axios error ", err);
       Swal.fire(

@@ -82,12 +82,12 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
       items: [
         {
           icon: <Users size={18} />,
-          label: "Clients",
+          label: "All Clients",
           url: "/admin/customers",
         },
         {
           icon: <BarChart size={18} />,
-          label: "Trade Management",
+          label: "Trades",
           url: "/admin/trades",
         },
         {

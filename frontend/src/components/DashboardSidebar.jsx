@@ -49,8 +49,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
         {
           icon: <User size={18} />,
           label: "Profile",
-          submenu: true,
-          children: [{ label: "profile", url: "/dashboard/profile" }],
+          url: "/dashboard/profile"
         },
       ],
     },
@@ -63,12 +62,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
           label: "Trades",
           url: "/dashboard/trades",
         },
-      ],
-    },
-    {
-      section: "Market",
-      items: [
-        {
+         {
           icon: <Banknote size={18} />,
           label: "Markets",
           url: "/dashboard/trade/markets",
@@ -76,12 +70,17 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
       ],
     },
     {
-      section: "Transactions",
+      section: "Transactions Wallet",
       items: [
         {
           icon: <HistoryIcon size={18} />,
-          label: "Transactions",
+          label: "Wallet History",
           url: "/dashboard/wallet",
+        },
+        {
+          icon: <Globe size={18} />,
+          label: "Add Fund Req",
+          url: "/dashboard/payment",
         },
       ],
     },
@@ -116,11 +115,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
           label: "Bank Account",
           url: "/dashboard/bank",
         },
-        {
-          icon: <Globe size={18} />,
-          label: "Payment",
-          url: "/dashboard/payment",
-        },
+        
         // {
         //   icon: <CheckCircle2 size={18} />,
         //   label: "Payment Approved",
@@ -133,17 +128,17 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
         },
       ],
     },
-    {
-      section: " ",
-      items: [
-        {
-          icon: <LogOut size={18} />,
-          label: "Log Out",
-          url: "/login",
-          logout: true,
-        },
-      ],
-    },
+    // {
+    //   section: " ",
+    //   items: [
+    //     {
+    //       icon: <LogOut size={18} />,
+    //       label: "Log Out",
+    //       url: "/login",
+    //       logout: true,
+    //     },
+    //   ],
+    // },
   ];
 
   return (
@@ -153,7 +148,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
     >
       {/* Sticky Header */}
       <div className="p-4 border-b sticky top-0 z-50   flex items-center justify-between">
-        <h2 className="text-xl font-bold text-red-600">Finance India Firm</h2>
+        <h2 className="text-xl font-bold text-red-600">Wealtstocker Research Firm</h2>
         <button onClick={onClose}>
           <FaTimes className="text-red-600 text-lg hover:rotate-90 transition-transform duration-500" />
         </button>

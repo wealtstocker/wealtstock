@@ -130,7 +130,6 @@ export async function registerCustomer(req, res) {
     password,
     confirm_password,
     address,
-    is_active,
   } = req.body;
   // console.log(req.body);
   const document_url = req.file?.path || null;
@@ -176,7 +175,7 @@ export async function registerCustomer(req, res) {
         password_hash,
         address,
         document_url,
-        is_active,
+        0,
       ]
     );
 

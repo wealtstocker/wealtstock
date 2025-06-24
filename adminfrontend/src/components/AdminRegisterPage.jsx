@@ -19,13 +19,14 @@ const AdminRegisterPage = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
+  
   const handleSubmit = async (values) => {
     try {
       const res = await axiosInstance.post("auth/admin/register", {
         ...values,
         role: "admin",
       });
-console.log(res)
+// console.log(res)
       toast.success("🎉 Admin registered successfully!", {
         position: "top-right",
       });

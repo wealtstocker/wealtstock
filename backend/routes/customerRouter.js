@@ -22,6 +22,6 @@ router.put("/:id", updateCustomer);
 router.delete("/:id", deleteCustomer);
 router.put("/activate/:id", activateCustomer);
 
-router.post("/add-bank", authenticate, addBankAccount); // ✅ Add bank account
+router.post("/add-bank", authenticate, addBankAccount); 
 router.put("/update-bank/:bankId", authenticate, updateBankAccount);
 export default router;

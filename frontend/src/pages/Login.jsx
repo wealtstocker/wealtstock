@@ -163,7 +163,7 @@ const LoginPage = () => {
 
             {/* Bottom Links */}
             <div className="mt-4 flex justify-between text-sm text-gray-500">
-              <button onClick={handleForgotPassword} className="hover:underline">Forgot Password?</button>
+              <button onClick={handleForgotPassword} className="hover:underline">{""}</button>
               <Link to="/register" className="hover:underline hover:scale-105">Create Account</Link>
             </div>
           </div>

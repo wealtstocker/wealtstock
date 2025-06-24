@@ -14,6 +14,7 @@ import SiteConfigPage from "../pages/Dashboard/SiteConfig";
 import AdminRegisterPage from "../components/AdminRegisterPage";
 import AdminWithdrawalList from "../pages/Dashboard/fund/WithdrawalListPage";
 import AdminWalletManager from "../pages/Dashboard/fund/AdminWalletManager";
+import NotFound from "../components/NotFound";
 
 const AppRoutes = () => {
   return (
@@ -35,8 +36,9 @@ const AppRoutes = () => {
         <Route path="withdrawal" element={<AdminWithdrawalList />} />
         <Route path="all-wallet" element={<AdminWalletManager />} />
         <Route path="site-config" element={<SiteConfigPage />} />
-
+        <Route path="*" element={<NotFound />} />
       </Route>
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

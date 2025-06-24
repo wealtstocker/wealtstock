@@ -21,6 +21,7 @@ export const fetchAllWithdrawals = createAsyncThunk(
   }
 );
 
+
 export const updateWithdrawalStatus = createAsyncThunk(
   "withdrawals/updateStatus",
   async ({ withdrawal_id, action }, thunkAPI) => {

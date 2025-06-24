@@ -57,13 +57,21 @@ const DashboardHeader = ({ onMenuClick, isSidebarOpen }) => {
 const handleLogout = () => {
   const name = user?.full_name || "User";
 
-  toast.success(`👋 ${name}, you have logged out successfully!`, {
-    position: "top-right",
-  });
+  // toast.success(`👋 ${name}, you have logged out successfully!`, {
+  //   position: "top-right",
+  // });
 
+  // ✅ Clear token and user data from localStorage
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+
+  // ✅ Dispatch Redux logout action (if using Redux)
   dispatch(logout());
+
+  // ✅ Redirect to homepage
   navigate("/");
 };
+
   return (
     <div
       ref={headerRef}

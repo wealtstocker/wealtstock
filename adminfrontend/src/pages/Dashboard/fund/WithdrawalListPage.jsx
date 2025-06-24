@@ -140,7 +140,7 @@ const AdminWithdrawalList = () => {
       title: "Action",
       key: "actions",
       render: (_, record) =>
-        record.status === "requested" ? (
+        record.status === "" ? (
           <Space>
             <Popconfirm
               title="Are you sure to approve this withdrawal?"

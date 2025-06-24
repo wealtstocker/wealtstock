@@ -1,5 +1,5 @@
 import pool from "../config/db.js";
-import bcrypt from "bcryptjs";
+import { sendSMS, sendWhatsAppMessage } from "../utils/twilioService.js";
 
 export async function getAllCustomers(req, res) {
   try {
@@ -77,15 +77,36 @@ export async function deleteCustomer(req, res) {
     res.status(500).json({ status: false, message: "Error deleting customer", error: err.message });
   }
 }
+
+
 export async function activateCustomer(req, res) {
   const { id } = req.params;
+
   try {
+    const [rows] = await pool.query("SELECT * FROM customers WHERE id = ?", [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ status: false, message: "Customer not found" });
+    }
+
+    const customer = rows[0];
     await pool.query("UPDATE customers SET is_active = true WHERE id = ?", [id]);
-    res.json({ status: true, message: "Customer activated successfully" });
+
+    // Credentials to send
+    const credentials = `Your Account has been activated.\nLogin ID: ${customer.email}\nPassword: ${customer.password_hash}`;
+
+    // ✅ Send SMS
+    console.log(customer)
+    await sendSMS(customer.phone_number, credentials);
+
+    // ✅ Optional: Send WhatsApp
+    // await sendWhatsAppMessage(customer.phone_number, credentials);
+
+    res.json({ status: true, message: "Customer activated and notified successfully" });
   } catch (err) {
     res.status(500).json({ status: false, message: "Error activating customer", error: err.message });
   }
 }
+
 export async function changePassword(req, res) {
   const customerId = req.user.id; 
   const { current_password, new_password } = req.body;

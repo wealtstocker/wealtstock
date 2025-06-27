@@ -11,8 +11,8 @@ const client = twilio(accountSid, authToken);
 // ✅ SMS Function
 export async function sendSMS(phone, message) {
   try {
-    const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`; 
-    console.log("----",formattedPhone)
+    const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
+    console.log("----", formattedPhone);
     const response = await client.messages.create({
       body: message,
       from: twilioPhone,
@@ -26,11 +26,10 @@ export async function sendSMS(phone, message) {
   }
 }
 
-
 // ✅ WhatsApp Function
 export async function sendWhatsAppMessage(phone, message) {
   try {
-  const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
+    const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
 
     const response = await client.messages.create({
       body: message,

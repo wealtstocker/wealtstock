@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { FaBars, FaUser, FaCog, FaSignOutAlt, FaWallet } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import gsap from "gsap";
-import { useDispatch, useSelector } from "react-redux"; 
+import { useDispatch, useSelector } from "react-redux";
 
 const DashboardHeader = ({ onMenuClick, isSidebarOpen }) => {
   const headerRef = useRef(null);
@@ -11,7 +11,9 @@ const DashboardHeader = ({ onMenuClick, isSidebarOpen }) => {
   const [showDropdown, setShowDropdown] = useState(false);
 
   // ✅ Get user from Redux or LocalStorage fallback
-  const user = useSelector((state) => state.auth.admin) || JSON.parse(localStorage.getItem("admin"));
+  const user =
+    useSelector((state) => state.auth.admin) ||
+    JSON.parse(localStorage.getItem("admin"));
   // const { balance, loading } = useSelector((state) => state.wallet || {}); // Optional if wallet slice is used
 
   // useEffect(() => {
@@ -39,10 +41,9 @@ const DashboardHeader = ({ onMenuClick, isSidebarOpen }) => {
   }, []);
 
   const handleLogout = () => {
-   
-    localStorage.removeItem("admin"); 
+    localStorage.removeItem("admin");
     localStorage.removeItem("token");
-    navigate("/login");
+    navigate("/");
   };
 
   return (

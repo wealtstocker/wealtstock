@@ -30,7 +30,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
     setActiveItem(label);
     if (isLogout) {
       dispatch(logout());
-      navigate("/login");
+      navigate("/");
     } else {
       if (url) navigate(url);
     }
@@ -48,7 +48,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
         {
           icon: <Home size={18} />,
           label: "Dashboard",
-          url: "/dashboard",
+          url: "/admin/dashboard",
         },
       ],
     },
@@ -92,7 +92,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
         },
         {
           icon: <ArrowDownCircle size={18} />,
-          label: "Fund-Req",
+          label: "Fund-Request",
           url: "/admin/fund-requests",
         },
         {
@@ -105,7 +105,6 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
           label: "Withdrawal",
           url: "/admin/withdrawal",
         },
-        
       ],
     },
     {
@@ -118,13 +117,13 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
         },
         {
           icon: <ArrowDownCircle size={18} />,
-          label: "Pay-In Requests",
-          url: "/admin/fund-requests",
+          label: "Pay-In",
+          url: "/admin/pay-in",
         },
         {
           icon: <ArrowUpCircle size={18} />,
-          label: "Pay-Out Requests",
-          url: "/admin/fund-request/payout",
+          label: "Pay-Out",
+          url: "/admin/pay-out",
         },
       ],
     },
@@ -159,7 +158,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
         {
           icon: <LogOut size={18} />,
           label: "Log Out",
-          url: "/login",
+          url: "/",
           logout: true,
         },
       ],

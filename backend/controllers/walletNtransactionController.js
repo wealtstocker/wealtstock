@@ -1,6 +1,4 @@
-
 import pool from "../config/db.js";
-
 
 export async function addFundRequest(req, res) {
   const customerId = req.user.id;
@@ -8,7 +6,9 @@ export async function addFundRequest(req, res) {
   const screenshot = req.file?.path?.replace(/\\/g, "/") || null;
 
   if (!amount || isNaN(amount) || amount <= 0 || !utr_number) {
-    return res.status(400).json({ message: "Amount and UTR number are required." });
+    return res
+      .status(400)
+      .json({ message: "Amount and UTR number are required." });
   }
 
   try {
@@ -25,7 +25,9 @@ export async function addFundRequest(req, res) {
     });
   } catch (error) {
     console.error("Add Fund Error:", error.message);
-    return res.status(500).json({ message: "Failed to submit fund request", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Failed to submit fund request", error: error.message });
   }
 }
 
@@ -34,17 +36,23 @@ export const getMyFundRequests = async (req, res) => {
   const customerId = req.user.id;
 
   try {
-    const [pending] = await pool.query(`
+    const [pending] = await pool.query(
+      `
       SELECT * FROM add_funds 
       WHERE customer_id = ? AND status = 'pending' AND is_active = TRUE
       ORDER BY created_at DESC
-    `, [customerId]);
+    `,
+      [customerId]
+    );
 
-    const [completed] = await pool.query(`
+    const [completed] = await pool.query(
+      `
       SELECT * FROM add_funds 
       WHERE customer_id = ? AND status = 'successful' AND is_active = TRUE
       ORDER BY created_at DESC
-    `, [customerId]);
+    `,
+      [customerId]
+    );
 
     return res.status(200).json({
       pending,
@@ -62,8 +70,8 @@ export async function requestWithdrawal(req, res) {
   const { amount, bank_account_id } = req.body;
 
   try {
-    if (!amount || isNaN(amount)) return res.status(400).json({ message: "Invalid amount" });
-
+    if (!amount || isNaN(amount))
+      return res.status(400).json({ message: "Invalid amount" });
 
     const [[wallet]] = await pool.query(
       "SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1",
@@ -97,12 +105,13 @@ export async function requestWithdrawal(req, res) {
       [customerId, amount, bank_account_id, txResult.insertId]
     );
 
-    res.status(201).json({ message: "✅ Withdrawal request submitted successfully" });
+    res
+      .status(201)
+      .json({ message: "✅ Withdrawal request submitted successfully" });
   } catch (err) {
     res.status(500).json({ message: "❌ Request failed", error: err.message });
   }
 }
-
 
 // ✅ User Check Balance
 export async function checkBalance(req, res) {
@@ -113,11 +122,14 @@ export async function checkBalance(req, res) {
       "SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1",
       [customerId]
     );
-    if (!wallet) return res.status(200).json({ message: "No wallet found",data:0 });
-    res.status(200).json({message:'balance fetched',data:wallet.balance})
+    if (!wallet)
+      return res.status(200).json({ message: "No wallet found", data: 0 });
+    res.status(200).json({ message: "balance fetched", data: wallet.balance });
     // res.json({ balance: wallet.balance });
   } catch (err) {
-    res.status(500).json({ message: "Balance fetch error", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Balance fetch error", error: err.message });
   }
 }
 
@@ -188,14 +200,17 @@ export const getAllTransactions = async (req, res) => {
 
     res.status(200).json({ transactions: rows });
   } catch (err) {
-    res.status(500).json({ message: "Error loading transactions", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Error loading transactions", error: err.message });
   }
 };
 
-
 export async function getAllFundRequests(req, res) {
   try {
-   const [rows] = await pool.query(`SELECT * FROM add_funds ORDER BY created_at DESC`);
+    const [rows] = await pool.query(
+      `SELECT * FROM add_funds ORDER BY created_at DESC`
+    );
 
     res.status(200).json({
       message: "All fund requests fetched",
@@ -206,7 +221,6 @@ export async function getAllFundRequests(req, res) {
     res.status(500).json({ message: "Failed to fetch fund requests" });
   }
 }
-
 
 export async function getApprovedFundRequests(req, res) {
   try {
@@ -255,12 +269,15 @@ export async function approveFundRequest(req, res) {
     await connection.beginTransaction();
 
     // Step 1: Get fund request
-    const [[fund]] = await connection.query("SELECT * FROM add_funds WHERE id = ?", [requestId]);
+    const [[fund]] = await connection.query(
+      "SELECT * FROM add_funds WHERE id = ? ",
+      [requestId]
+    );
     if (!fund) {
       await connection.rollback();
       return res.status(404).json({ message: "Fund request not found" });
     }
-    if (fund.status === 'successful') {
+    if (fund.status === "successful") {
       await connection.rollback();
       return res.status(400).json({ message: "Already approved" });
     }
@@ -274,8 +291,8 @@ export async function approveFundRequest(req, res) {
       [customerId]
     );
 
-    const previousBalance = Number(lastWallet?.balance || 0);  // ✅ Ensure it's a number
-    const amountNum = Number(amount);                          // ✅ Ensure amount is a number
+    const previousBalance = Number(lastWallet?.balance || 0); // ✅ Ensure it's a number
+    const amountNum = Number(amount); // ✅ Ensure amount is a number
     const newBalance = previousBalance + amountNum;
     const updateblance = Math.round((previousBalance + amountNum) * 100) / 100;
 
@@ -288,7 +305,10 @@ export async function approveFundRequest(req, res) {
     );
 
     // Step 4: Update fund request status
-    await connection.query("UPDATE add_funds SET status = 'successful' WHERE id = ?", [requestId]);
+    await connection.query(
+      "UPDATE add_funds SET status = 'successful' WHERE id = ?",
+      [requestId]
+    );
     await connection.commit();
     return res.json({
       message: "✅ Fund approved and wallet updated",
@@ -298,7 +318,74 @@ export async function approveFundRequest(req, res) {
   } catch (err) {
     await connection.rollback();
     console.error("❌ Error in fund approval:", err.message);
-    return res.status(500).json({ message: "Approval failed", error: err.message });
+    return res
+      .status(500)
+      .json({ message: "Approval failed", error: err.message });
+  } finally {
+    connection.release();
+  }
+}
+
+//admin payout
+export async function payout(req, res) {
+  const { requestId } = req.params;
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Step 1: Get fund request
+    const [[fund]] = await connection.query(
+      "SELECT * FROM add_funds WHERE id = ? and status=successful ",
+      [requestId]
+    );
+    if (!fund) {
+      await connection.rollback();
+      return res.status(404).json({ message: "Fund request not found" });
+    }
+    if (fund.status === "successful") {
+      await connection.rollback();
+      return res.status(400).json({ message: "Already approved" });
+    }
+
+    const customerId = fund.customer_id;
+    const amount = Number(fund.amount);
+
+    // ✅ Step 2: Lock and get the latest balance
+    const [[lastWallet]] = await connection.query(
+      "SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE",
+      [customerId]
+    );
+
+    const previousBalance = Number(lastWallet?.balance || 0); // ✅ Ensure it's a number
+    const amountNum = Number(amount); // ✅ Ensure amount is a number
+    const newBalance = previousBalance + amountNum;
+    const updateblance = Math.round((previousBalance + amountNum) * 100) / 100;
+
+    // console.log(updateblance)
+
+    await connection.query(
+      `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
+       VALUES (?, ?, 'credit', ?, NULL)`,
+      [customerId, amount, newBalance]
+    );
+
+    // Step 4: Update fund request status
+    await connection.query(
+      "UPDATE add_funds SET status = 'successful' WHERE id = ?",
+      [requestId]
+    );
+    await connection.commit();
+    return res.json({
+      message: "✅ Fund approved and wallet updated",
+      amount,
+      new_balance: newBalance,
+    });
+  } catch (err) {
+    await connection.rollback();
+    console.error("❌ Error in fund approval:", err.message);
+    return res
+      .status(500)
+      .json({ message: "Approval failed", error: err.message });
   } finally {
     connection.release();
   }
@@ -308,8 +395,18 @@ export async function approveFundRequest(req, res) {
 export async function topUpWallet(req, res) {
   const { customerId, amount, description, type } = req.body;
 
-  if (!customerId || !amount || isNaN(amount) || !['credit', 'debit'].includes(type)) {
-    return res.status(400).json({ message: "Missing or invalid customerId, amount, or type (credit/debit)" });
+  if (
+    !customerId ||
+    !amount ||
+    isNaN(amount) ||
+    !["credit", "debit"].includes(type)
+  ) {
+    return res
+      .status(400)
+      .json({
+        message:
+          "Missing or invalid customerId, amount, or type (credit/debit)",
+      });
   }
 
   const connection = await pool.getConnection();
@@ -325,15 +422,18 @@ export async function topUpWallet(req, res) {
 
     const previousBalance = Number(lastWallet?.balance || 0);
     const amountNum = Number(amount);
-    let newBalance = type === 'credit'
-      ? previousBalance + amountNum
-      : previousBalance - amountNum;
+    let newBalance =
+      type === "credit"
+        ? previousBalance + amountNum
+        : previousBalance - amountNum;
 
     newBalance = Math.round(newBalance * 100) / 100;
 
     if (newBalance < 0) {
       await connection.rollback();
-      return res.status(400).json({ message: "❌ Insufficient funds for debit operation" });
+      return res
+        .status(400)
+        .json({ message: "❌ Insufficient funds for debit operation" });
     }
 
     // Insert transaction log
@@ -357,16 +457,16 @@ export async function topUpWallet(req, res) {
       transaction_id: txResult.insertId,
       new_balance: newBalance,
     });
-
   } catch (err) {
     await connection.rollback();
     console.error("❌ Wallet update error:", err.message);
-    res.status(500).json({ message: "Wallet update error", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Wallet update error", error: err.message });
   } finally {
     connection.release();
   }
 }
-
 
 // ✅ Admin View All Balances
 export async function getAllUserBalances(req, res) {
@@ -379,10 +479,11 @@ export async function getAllUserBalances(req, res) {
     `);
     res.json({ balances: rows });
   } catch (err) {
-    res.status(500).json({ message: "Error fetching balances", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Error fetching balances", error: err.message });
   }
 }
-
 
 // ✅ Admin Update Fund Status
 export const updateFundRequestStatus = async (req, res) => {
@@ -390,10 +491,25 @@ export const updateFundRequestStatus = async (req, res) => {
   const { status } = req.body;
 
   try {
-    await pool.query("UPDATE fund_requests SET status = ? WHERE id = ?", [status, id]);
-    res.status(200).json({ status: true, message: `Fund request ${id} status updated to ${status}`, data: { id, status } });
+    await pool.query("UPDATE fund_requests SET status = ? WHERE id = ?", [
+      status,
+      id,
+    ]);
+    res
+      .status(200)
+      .json({
+        status: true,
+        message: `Fund request ${id} status updated to ${status}`,
+        data: { id, status },
+      });
   } catch (error) {
-    res.status(500).json({ status: false, message: "Failed to update fund request status", error: error.message });
+    res
+      .status(500)
+      .json({
+        status: false,
+        message: "Failed to update fund request status",
+        error: error.message,
+      });
   }
 };
 
@@ -434,7 +550,6 @@ export async function getAllWithdrawals(req, res) {
   }
 }
 
-
 // ✅ Admin Pending Withdrawals
 export async function getPendingWithdrawals(req, res) {
   try {
@@ -455,7 +570,7 @@ export async function getPendingWithdrawals(req, res) {
 export async function updateWithdrawalStatus(req, res) {
   const { withdrawal_id, action } = req.body;
 
-  if (!withdrawal_id || !['approve', 'reject'].includes(action)) {
+  if (!withdrawal_id || !["approve", "reject"].includes(action)) {
     return res.status(400).json({ message: "Invalid input" });
   }
 
@@ -473,7 +588,7 @@ export async function updateWithdrawalStatus(req, res) {
       return res.status(404).json({ message: "Withdrawal not found" });
     }
 
-    if (withdrawal.status !== 'requested') {
+    if (withdrawal.status !== "requested") {
       await connection.rollback();
       return res.status(400).json({ message: "Withdrawal already processed" });
     }
@@ -486,7 +601,7 @@ export async function updateWithdrawalStatus(req, res) {
     const currentBalance = Number(wallet?.balance || 0);
     const withdrawalAmount = Number(withdrawal.amount);
 
-    if (action === 'approve') {
+    if (action === "approve") {
       if (currentBalance < withdrawalAmount) {
         await connection.rollback();
         return res.status(400).json({ message: "Insufficient funds" });
@@ -504,7 +619,12 @@ export async function updateWithdrawalStatus(req, res) {
       await connection.query(
         `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id, updated_at)
          VALUES (?, ?, 'debit', ?, ?, NOW())`,
-        [withdrawal.customer_id, withdrawalAmount, newBalance, withdrawal.transaction_id]
+        [
+          withdrawal.customer_id,
+          withdrawalAmount,
+          newBalance,
+          withdrawal.transaction_id,
+        ]
       );
 
       // Update withdrawal status
@@ -514,10 +634,12 @@ export async function updateWithdrawalStatus(req, res) {
       );
 
       await connection.commit();
-      return res.status(200).json({ message: "Withdrawal approved", new_balance: newBalance });
+      return res
+        .status(200)
+        .json({ message: "Withdrawal approved", new_balance: newBalance });
     }
 
-    if (action === 'reject') {
+    if (action === "reject") {
       // Just mark transaction and withdrawal as rejected
       await connection.query(
         `UPDATE transactions SET status = 'rejected', description = 'Withdrawal rejected' WHERE id = ?`,

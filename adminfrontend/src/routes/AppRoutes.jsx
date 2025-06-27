@@ -15,6 +15,8 @@ import AdminRegisterPage from "../components/AdminRegisterPage";
 import AdminWithdrawalList from "../pages/Dashboard/fund/WithdrawalListPage";
 import AdminWalletManager from "../pages/Dashboard/fund/AdminWalletManager";
 import NotFound from "../components/NotFound";
+import PayoutScreen from "../pages/Dashboard/fund/PayoutScreen";
+import PayinScreen from "../pages/Dashboard/fund/PayinScreen";
 
 const AppRoutes = () => {
   return (
@@ -32,6 +34,8 @@ const AppRoutes = () => {
         <Route path="trades/create" element={<TradeForm />} />
         <Route path="trades/edit/:id" element={<TradeForm />} />
         <Route path="fund-requests" element={<AdminFundRequestList />} />
+        <Route path="pay-in" element={<PayinScreen />} />
+        <Route path="pay-out" element={<PayoutScreen />} />
         <Route path="transactions" element={<AdminTransactionList />} />
         <Route path="withdrawal" element={<AdminWithdrawalList />} />
         <Route path="all-wallet" element={<AdminWalletManager />} />

@@ -5,7 +5,6 @@ import { generateToken } from "../utils/token.js";
 import { v4 as uuidv4 } from "uuid";
 import { sendSMS, saveOtp, verifyOtp, clearOtp } from "../utils/otp.js";
 
-
 export async function registerAdmin(req, res) {
   const {
     full_name,
@@ -27,7 +26,9 @@ export async function registerAdmin(req, res) {
   }
 
   try {
-    const [existing] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
+    const [existing] = await pool.query("SELECT * FROM users WHERE email = ?", [
+      email,
+    ]);
     if (existing.length > 0) {
       return res.status(409).json({ message: "Admin already registered" });
     }
@@ -51,12 +52,13 @@ export async function registerAdmin(req, res) {
   }
 }
 
-
 export async function loginAdmin(req, res) {
   const { email, password } = req.body;
 
   try {
-    const [rows] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
+    const [rows] = await pool.query("SELECT * FROM users WHERE email = ?", [
+      email,
+    ]);
 
     if (rows.length === 0) {
       return res.status(400).json({ message: "Invalid credentials" });
@@ -107,7 +109,6 @@ export async function loginAdmin(req, res) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 }
-
 
 export function logout(req, res) {
   res.clearCookie("token");
@@ -216,9 +217,11 @@ export async function loginCustomer(req, res) {
 
     const customer = rows[0];
 
-    // if (!customer.is_active) {
-    //   return res.status(403).json({ status: false, message: "Account is inactive" });
-    // }
+    if (!customer.is_active) {
+      return res
+        .status(403)
+        .json({ status: false, message: "Account is inactive" });
+    }
 
     if (password !== customer.password_hash) {
       return res

@@ -50,7 +50,7 @@ export const createTrade = async (req, res) => {
       const currentBalance = walletRows.length
         ? parseFloat(walletRows[0].balance)
         : 0;
-      if (currentBalance < profitLossValue) {
+    if (currentBalance < parseFloat(profitLossValue)){
         return res.status(400).json({
           message: "Insufficient balance for loss trade",
           currentBalance,
@@ -143,9 +143,9 @@ export const createTrade = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error in createTrade:", error);
-    res.status(500).json({ message: "Trade creation failed" });
-  }
+  console.error("❌ Error in createTrade:", error.message);
+  res.status(500).json({ message: "Trade creation failed", error: error.message });
+}
 };
 
 export const getAllTrades = async (req, res) => {
@@ -188,31 +188,35 @@ export const getTradeById = async (req, res) => {
   }
 };
 
-// ✅ UPDATE Trade (rollback old txn, apply new if admin+approved)
 export const updateTrade = async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
 
   try {
-    // Step 1: Fetch original trade
+    // 1. Fetch the original trade
     const [tradeRows] = await pool.query(
       `SELECT * FROM trades WHERE id = ? AND is_active = TRUE`,
       [id]
     );
-    if (!tradeRows.length)
+
+    if (!tradeRows.length) {
       return res.status(404).json({ message: "Trade not found" });
+    }
 
     const oldTrade = tradeRows[0];
-    const isAdmin = updates.created_by === "admin";
+
+    // Assume `created_by` is controlled from backend (e.g., session)
+    const isAdmin = true; // 🔐 Hardcoded for now — use real user auth
     const isApproved = updates.status === "approved";
 
-    // Step 2: Reverse existing transaction if any
-    const txnDesc = `Trade ${
+    // 2. Reverse old transaction (if any)
+    const oldTxnDesc = `Trade ${
       oldTrade.profit_loss === "profit" ? "credit" : "debit"
     } for Trade No: ${oldTrade.trade_number}`;
+
     const [txnRows] = await pool.query(
       `SELECT * FROM transactions WHERE description = ? AND customer_id = ? AND is_reversed = FALSE`,
-      [txnDesc, oldTrade.customer_id]
+      [oldTxnDesc, oldTrade.customer_id]
     );
 
     let currentBalance = 0;
@@ -220,43 +224,61 @@ export const updateTrade = async (req, res) => {
       `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1`,
       [oldTrade.customer_id]
     );
-    if (walletRows.length) currentBalance = parseFloat(walletRows[0].balance);
+    if (walletRows.length) {
+      currentBalance = parseFloat(walletRows[0].balance);
+    }
 
     if (txnRows.length) {
       const txn = txnRows[0];
       const rollbackAmount = parseFloat(txn.amount);
 
-      // Adjust balance
       currentBalance =
         txn.type === "credit"
           ? currentBalance - rollbackAmount
           : currentBalance + rollbackAmount;
 
-      await pool.query(`DELETE FROM wallets WHERE transaction_id = ?`, [
-        txn.id,
-      ]);
+      await pool.query(`DELETE FROM wallets WHERE transaction_id = ?`, [txn.id]);
       await pool.query(`DELETE FROM transactions WHERE id = ?`, [txn.id]);
     }
 
-    // Step 3: Recalculate new trade values
-    const buyValue =
-      parseFloat(updates.buy_price) * parseFloat(updates.buy_quantity);
-    const exitValue =
-      parseFloat(updates.exit_price) * parseFloat(updates.exit_quantity);
+    // 3. Recalculate trade values
+    const buyValue = parseFloat(updates.buy_price) * parseFloat(updates.buy_quantity);
+    const exitValue = parseFloat(updates.exit_price) * parseFloat(updates.exit_quantity);
     const brokerage = parseFloat(updates.brokerage || 0);
     const netPnl = exitValue - buyValue - brokerage;
     const profitLossValue = Math.abs(netPnl).toFixed(2);
     const profitLoss = netPnl >= 0 ? "profit" : "loss";
 
     // Update calculated fields
-    updates.buy_value = buyValue;
-    updates.exit_value = exitValue;
-    updates.profit_loss = profitLoss;
-    updates.profit_loss_value = profitLossValue;
+    const {
+      customer_id,
+      instrument,
+      buy_price,
+      buy_quantity,
+      exit_price,
+      exit_quantity,
+      status,
+    } = updates;
 
-    // Step 4: Admin balance check if new trade is a loss
+    const updateFields = {
+      customer_id,
+      instrument,
+      buy_price,
+      buy_quantity,
+      buy_value,
+      exit_price,
+      exit_quantity,
+      exit_value,
+      brokerage,
+      profit_loss: profitLoss,
+      profit_loss_value: profitLossValue,
+      status,
+      updated_at: new Date(),
+    };
+
+    // 4. Admin balance check if trade is a loss
     if (isAdmin && isApproved && profitLoss === "loss") {
-      if (currentBalance < profitLossValue) {
+      if (currentBalance < parseFloat(profitLossValue)) {
         return res.status(400).json({
           message: "Insufficient balance for loss trade",
           currentBalance,
@@ -265,10 +287,32 @@ export const updateTrade = async (req, res) => {
       }
     }
 
-    // Step 5: Apply updates to trade
-    await pool.query(`UPDATE trades SET ? WHERE id = ?`, [updates, id]);
+    // 5. Update the trade securely (avoid SET ?)
+    await pool.query(
+      `UPDATE trades SET
+        customer_id = ?, instrument = ?, buy_price = ?, buy_quantity = ?,
+        buy_value = ?, exit_price = ?, exit_quantity = ?, exit_value = ?,
+        brokerage = ?, profit_loss = ?, profit_loss_value = ?, status = ?, updated_at = ?
+      WHERE id = ?`,
+      [
+        updateFields.customer_id,
+        updateFields.instrument,
+        updateFields.buy_price,
+        updateFields.buy_quantity,
+        updateFields.buy_value,
+        updateFields.exit_price,
+        updateFields.exit_quantity,
+        updateFields.exit_value,
+        updateFields.brokerage,
+        updateFields.profit_loss,
+        updateFields.profit_loss_value,
+        updateFields.status,
+        updateFields.updated_at,
+        id,
+      ]
+    );
 
-    // Step 6: If approved + admin, create transaction and wallet entry
+    // 6. Create transaction and wallet if admin and approved
     if (isAdmin && isApproved) {
       const txnType = profitLoss === "profit" ? "credit" : "debit";
       const newDesc = `Trade ${txnType} for Trade No: ${oldTrade.trade_number}`;
@@ -278,6 +322,7 @@ export const updateTrade = async (req, res) => {
          VALUES (?, ?, 'completed', ?, ?)`,
         [oldTrade.customer_id, txnType, profitLossValue, newDesc]
       );
+
       const txnId = txnResult.insertId;
 
       const newBalance =
@@ -292,12 +337,13 @@ export const updateTrade = async (req, res) => {
       );
     }
 
-    res.json({ message: "Trade updated successfully" });
+    res.status(200).json({ message: "Trade updated successfully" });
   } catch (error) {
-    console.error("Error in updateTrade:", error);
+    console.error("❌ Error in updateTrade:", error.message);
     res.status(500).json({ message: "Failed to update trade" });
   }
 };
+
 
 // ✅ DELETE Trade (with wallet & txn rollback if admin)
 export const deleteTrade = async (req, res) => {

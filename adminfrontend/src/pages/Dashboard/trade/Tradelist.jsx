@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import {
   Table,
   Button,
@@ -43,88 +44,95 @@ const TradeList = () => {
     return customer ? customer.full_name : 'Unknown';
   };
 
-  const columns = [
-    {
-      title: 'Trade No.',
-      dataIndex: 'trade_number',
-      key: 'trade_number',
-      responsive: ['sm'],
-    },
-    {
-      title: 'Customer',
-      key: 'customer',
-      render: (record) => (
-        <div>
-          <div className="font-medium text-indigo-700">
-            {getCustomerName(record.customer_id)}
-          </div>
-          <div className="text-sm text-gray-500">ID: {record.customer_id}</div>
+ const columns = [
+  {
+    title: 'Trade No.',
+    dataIndex: 'trade_number',
+    key: 'trade_number',
+    responsive: ['sm'],
+  },
+  {
+    title: 'Customer',
+    key: 'customer',
+    render: (record) => (
+      <div>
+        <div className="font-medium text-indigo-700">
+          {getCustomerName(record.customer_id)}
         </div>
-      ),
-    },
-    {
-      title: 'Instrument',
-      dataIndex: 'instrument',
-      key: 'instrument',
-      responsive: ['md'],
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Tag color={status === 'approved' ? 'green' : 'orange'}>
-          {status.toUpperCase()}
-        </Tag>
-      ),
-    },
-    {
-      title: 'P/L Value',
-      dataIndex: 'profit_loss_value',
-      key: 'profit_loss_value',
-      render: (value) => (
-        <span className={value >= 0 ? 'text-green-600' : 'text-red-600'}>
-          ₹{value}
+        <div className="text-sm text-gray-500">ID: {record.customer_id}</div>
+      </div>
+    ),
+  },
+  {
+    title: 'Instrument',
+    dataIndex: 'instrument',
+    key: 'instrument',
+    responsive: ['md'],
+  },
+  {
+    title: 'Status',
+    dataIndex: 'status',
+    key: 'status',
+    render: (status) => (
+      <Tag color={status === 'approved' ? 'green' : 'orange'}>
+        {status.toUpperCase()}
+      </Tag>
+    ),
+  },
+  {
+    title: 'P/L Value',
+    key: 'profit_loss',
+    render: (_, record) => {
+      const isProfit = record.profit_loss === 'profit';
+      const amount = parseFloat(record.profit_loss_value).toFixed(2);
+      const icon = isProfit ? <ArrowUpOutlined /> : <ArrowDownOutlined />;
+      const color = isProfit ? 'text-green-600' : 'text-red-600';
+
+      return (
+        <span className={`flex items-center gap-1 font-semibold ${color}`}>
+          {icon} ₹{amount}
         </span>
-      ),
+      );
     },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Space wrap>
-          <Tooltip title="View Trade">
+  },
+  {
+    title: 'Actions',
+    key: 'actions',
+    render: (_, record) => (
+      <Space wrap>
+        <Tooltip title="View Trade">
+          <Button
+            type="default"
+            shape="circle"
+            icon={<EyeOutlined />}
+            onClick={() => navigate(`/admin/trades/${record.id}`)}
+          />
+        </Tooltip>
+
+        <Tooltip title="Edit Trade">
+          <Button
+            type="default"
+            shape="circle"
+            icon={<EditOutlined />}
+            onClick={() => navigate(`/admin/trades/edit/${record.id}`)}
+          />
+        </Tooltip>
+
+        {record.status !== 'approved' && (
+          <Tooltip title="Approve Trade">
             <Button
-              type="default"
+              type="primary"
               shape="circle"
-              icon={<EyeOutlined />}
-              onClick={() => navigate(`/admin/trades/${record.id}`)}
+              icon={<CheckCircleOutlined />}
+              onClick={() => handleApprove(record.id)}
             />
           </Tooltip>
+        )}
+      </Space>
+    ),
+  },
+];
 
-          <Tooltip title="Edit Trade">
-            <Button
-              type="default"
-              shape="circle"
-              icon={<EditOutlined />}
-              onClick={() => navigate(`/admin/trades/edit/${record.id}`)}
-            />
-          </Tooltip>
-
-          {record.status !== 'approved' && (
-            <Tooltip title="Approve Trade">
-              <Button
-                type="primary"
-                shape="circle"
-                icon={<CheckCircleOutlined />}
-                onClick={() => handleApprove(record.id)}
-              />
-            </Tooltip>
-          )}
-        </Space>
-      ),
-    },
-  ];
 
   return (
     <div className="p-4 space-y-4 overflow-x-auto">

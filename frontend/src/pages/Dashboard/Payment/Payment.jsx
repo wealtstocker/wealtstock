@@ -4,15 +4,18 @@ import {
   Spin,
   Empty,
   Card,
-  Table
+  Table,
+  Button
 } from 'antd';
 import {
   FaWallet,
   FaHourglassHalf,
-  FaCheckCircle
+  FaCheckCircle,
+  FaPlus
 } from 'react-icons/fa';
 
 import axiosInstance from '../../../api/axiosInstance';
+import AddFundPage from '../profile/AddFundPage';
 
 const { TabPane } = Tabs;
 
@@ -31,6 +34,8 @@ const DashboardCard = ({ icon, label, value, color }) => (
 const PaymentPage = () => {
   const [fundRequests, setFundRequests] = useState({ pending: [], completed: [] });
   const [loading, setLoading] = useState(true);
+  const [showAddFund, setShowAddFund] = useState(false);
+
   useEffect(() => {
     const fetchFundRequests = async () => {
       setLoading(true);
@@ -124,7 +129,22 @@ const PaymentPage = () => {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-semibold mb-4">💳 Fund Request Summary</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-semibold">💳 Fund Request Summary</h1>
+        <Button
+          type= "primary"
+         icon={<FaPlus />}
+          onClick={() => setShowAddFund(!showAddFund)}
+        >
+          {showAddFund ? 'Close Add Fund' : 'Add Fund'}
+        </Button>
+      </div>
+
+      {showAddFund && (
+        <div className="mb-6">
+          <AddFundPage />
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center items-center min-h-[200px]">

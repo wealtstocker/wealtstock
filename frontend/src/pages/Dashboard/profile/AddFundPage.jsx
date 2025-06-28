@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import axiosInstance from '../../../api/axiosInstance';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSiteConfig } from '../../../redux/Slices/siteConfigSlice'
+import { Upload, Form, Button } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+import toast from '../../Services/toast';
 const AddFundPage = () => {
   const [amount, setAmount] = useState('');
   const [utr, setUtr] = useState('');
@@ -15,22 +18,24 @@ const AddFundPage = () => {
  useEffect(() => {
     dispatch(fetchSiteConfig());
   }, [dispatch]);
+
   const handleScreenshotUpload = (e) => {
     setScreenshot(e.target.files[0]);
   };
-
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
     if (!amount || isNaN(amount) || Number(amount) <= 0) {
-      return alert("Enter a valid amount greater than 0");
+      toast.error("Enter a valid amount greater than 0");
+      return;
     }
     if (!utr.trim()) {
-      return alert("Please enter UTR or reference number");
+      toast .error("Please enter UTR or reference number");
+      return;
     }
     if (!screenshot) {
-      return alert("Please upload the payment screenshot");
+      toast.error("Please upload a screenshot");
+      return;
     }
 
     const formData = new FormData();
@@ -42,7 +47,6 @@ const AddFundPage = () => {
 
     try {
       setLoading(true);
-
       const res = await axiosInstance.post("wallet/fund-request", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -50,22 +54,23 @@ const AddFundPage = () => {
         },
       });
 
-      console.log(res.data);
+      console.log("✅ Fund request response:", res.data);
+      toast.success("Request submitted successfully!");
       setSubmitted(true);
       setAmount("");
       setUtr("");
       setScreenshot(null);
+      setPreviewURL(null);
       setNote("");
     } catch (err) {
-      console.error(err);
-      alert("Error submitting fund request");
+      console.error("❌ Error submitting request:", err);
+      toast.error("Submission failed. Try again.");
     } finally {
       setLoading(false);
     }
   };
-
   return (
-    <div className="max-w-3xl mx-auto p-4 bg-white rounded shadow mt-8">
+    <div className="max-w-3xl mx-auto p-4 bg-gray-50 rounded shadow-md md:mt-3">
       <h2 className="text-xl font-bold text-red-600 mb-2">Pay-In</h2>
 
      <div className="text-center mb-6">
@@ -115,16 +120,23 @@ const AddFundPage = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Attach Payment Screenshot
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleScreenshotUpload}
-              className="mt-1"
-              required
-            />
+            <Form.Item
+  label="Attach Payment Screenshot"
+  name="screenshot"
+  rules={[{ required: true, message: 'Please upload a payment screenshot!' }]}
+>
+  <Upload
+    accept="image/*"
+    showUploadList={true}
+    beforeUpload={(file) => {
+      handleScreenshotUpload({ target: { files: [file] } });
+      return false; // prevent auto-upload
+    }}
+    maxCount={1}
+  >
+    <Button icon={<UploadOutlined />}>Click to Upload</Button>
+  </Upload>
+</Form.Item>
           </div>
 
           <div>

@@ -8,7 +8,17 @@ import {
 } from '../../../redux/Slices/tradeSlice';
 import { fetchAllCustomers } from '../../../redux/Slices/customerSlice';
 import Toast from '../../../services/toast';
-import { FiUser, FiDollarSign, FiHash, FiList, FiPercent } from 'react-icons/fi';
+import {
+  FiUser, FiDollarSign, FiHash, FiList, FiPercent,
+} from 'react-icons/fi';
+import {
+  Button,
+  Spin,
+  Select,
+} from 'antd';
+import { ArrowLeftOutlined } from '@ant-design/icons';
+
+const { Option } = Select;
 
 const TradeForm = () => {
   const dispatch = useDispatch();
@@ -35,9 +45,7 @@ const TradeForm = () => {
   }, [dispatch, id]);
 
   useEffect(() => {
-    if (isEdit && trade) {
-      setFormData(trade);
-    }
+    if (isEdit && trade) setFormData(trade);
   }, [trade, isEdit]);
 
   const handleChange = (e) => {
@@ -53,22 +61,43 @@ const TradeForm = () => {
         : createTrade({ ...formData, created_by: 'admin' });
 
       await dispatch(action).unwrap();
-      Toast.success(`Trade ${isEdit ? 'updated' : 'created'} successfully`);
+      // Toast.success(`Trade ${isEdit ? 'updated' : 'created'} successfully`);
       navigate('/admin/trades');
-    } catch (error) {
-      Toast.error('Something went wrong');
+    } catch {
+      console.log("error")
+      // Toast.error('Something went wrong');
     }
   };
 
+  if (isEdit && loading) {
+    return (
+      <div className="flex justify-center items-center h-60">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
-      <h2 className="text-2xl font-bold text-center mb-8 flex items-center justify-center gap-2 text-indigo-700">
-        📝 {isEdit ? 'Edit Trade' : 'Create Trade'}
-      </h2>
+      <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
+        <div className="flex items-center gap-3">
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
+            Back
+          </Button>
+          <h2 className="text-xl sm:text-2xl font-bold text-indigo-700">
+            {isEdit ? '✏️ Edit Trade' : '📝 Create Trade'}
+          </h2>
+        </div>
+        {isEdit && (
+          <div className="text-sm text-gray-600">
+            Trade Number: <strong>{trade?.trade_number}</strong>
+          </div>
+        )}
+      </div>
 
       <form
         onSubmit={handleSubmit}
-        className="bg-white p-6 rounded-xl shadow-lg grid grid-cols-1 md:grid-cols-2 gap-6"
+        className="bg-white p-6 rounded-xl shadow-md grid grid-cols-1 sm:grid-cols-2 gap-6"
       >
         {/* Customer */}
         <div>
@@ -79,10 +108,10 @@ const TradeForm = () => {
             name="customer_id"
             value={formData.customer_id}
             onChange={handleChange}
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
+            className="w-full px-3 py-2 border rounded-lg"
           >
-            <option value="">Select a customer</option>
+            <option value="">Select customer</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.full_name} ({c.id})
@@ -99,11 +128,11 @@ const TradeForm = () => {
           <input
             name="instrument"
             type="text"
-            placeholder="Stock/Index name"
             value={formData.instrument}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g. TATASTEEL"
+            className="w-full px-3 py-2 border rounded-lg"
           />
         </div>
 
@@ -115,11 +144,11 @@ const TradeForm = () => {
           <input
             name="buy_price"
             type="number"
-            placeholder="0.00"
             value={formData.buy_price}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g. 350.00"
+            className="w-full px-3 py-2 border rounded-lg"
           />
         </div>
 
@@ -131,11 +160,11 @@ const TradeForm = () => {
           <input
             name="buy_quantity"
             type="number"
-            placeholder="0"
             value={formData.buy_quantity}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g. 10"
+            className="w-full px-3 py-2 border rounded-lg"
           />
         </div>
 
@@ -147,11 +176,11 @@ const TradeForm = () => {
           <input
             name="exit_price"
             type="number"
-            placeholder="0.00"
             value={formData.exit_price}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g. 370.00"
+            className="w-full px-3 py-2 border rounded-lg"
           />
         </div>
 
@@ -163,38 +192,38 @@ const TradeForm = () => {
           <input
             name="exit_quantity"
             type="number"
-            placeholder="0"
             value={formData.exit_quantity}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g. 10"
+            className="w-full px-3 py-2 border rounded-lg"
           />
         </div>
 
         {/* Brokerage */}
-        <div className="md:col-span-2">
+        <div className="sm:col-span-2">
           <label className="block text-sm font-semibold mb-1">
             <FiPercent className="inline mr-1" /> Brokerage
           </label>
           <input
             name="brokerage"
             type="number"
-            placeholder="0.00"
             value={formData.brokerage}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g. 5.00"
+            className="w-full px-3 py-2 border rounded-lg"
           />
         </div>
 
-        {/* Submit */}
-        <div className="md:col-span-2 text-center mt-6">
+        {/* Submit Button */}
+        <div className="sm:col-span-2 text-center mt-4">
           <button
             type="submit"
             disabled={loading}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition"
           >
-            {isEdit ? 'Update Trade' : 'Submit Trade'}
+            {loading ? 'Processing...' : isEdit ? 'Update Trade' : 'Create Trade'}
           </button>
         </div>
       </form>

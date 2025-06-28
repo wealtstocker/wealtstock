@@ -13,6 +13,7 @@ const DashboardPage = () => {
   const { balance, approvedTrades, walletHistory } = useSelector((state) => state.wallet);
   const { data: customer, loading: customerLoading } = useSelector((state) => state.customer);
 
+  console.log( approvedTrades)
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (user?.id) {

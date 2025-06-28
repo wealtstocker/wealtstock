@@ -1,7 +1,6 @@
 // src/routes/AppRoutes.jsx
 import { Routes, Route } from "react-router-dom";
 import AdminLayout from "../layouts/AdminLayout";
-import Dashboard from "../pages/Dashboard";
 import LoginPage from "../components/Login";
 import CustomerTable from "../pages/Dashboard/customer/Customer";
 import CustomerDetails from "../pages/Dashboard/customer/CustomerDetails";
@@ -17,6 +16,7 @@ import AdminWalletManager from "../pages/Dashboard/fund/AdminWalletManager";
 import NotFound from "../components/NotFound";
 import PayoutScreen from "../pages/Dashboard/fund/PayoutScreen";
 import PayinScreen from "../pages/Dashboard/fund/PayinScreen";
+import AdminDashboard from "../pages/Dashboard";
 
 const AppRoutes = () => {
   return (
@@ -26,7 +26,7 @@ const AppRoutes = () => {
 
       {/* Admin Protected Routes */}
       <Route path="/admin" element={<AdminLayout />}>
-        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="customers" element={<CustomerTable />} />
         <Route path="customers/:id" element={<CustomerDetails />} />
         <Route path="trades" element={<TradeList />} />

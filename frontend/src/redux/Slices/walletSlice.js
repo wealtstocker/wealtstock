@@ -7,11 +7,25 @@ export const fetchWalletBalance = createAsyncThunk("wallet/fetchBalance", async 
   return res.data.data;
 });
 
-export const fetchApprovedTrades = createAsyncThunk("wallet/fetchApprovedTrades", async () => {
-  const res = await axiosInstance.get("/trade");
-  const approvedTrades = res.data.filter((trade) => trade.status === "approved");
-  return approvedTrades.length;
-});
+export const fetchApprovedTrades = createAsyncThunk(
+  "wallet/fetchApprovedTrades",
+  async (customerId, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.get("/trade");
+
+      const approvedTrades = res.data.filter(
+        (trade) => trade.status === "approved" && trade.customer_id === customerId
+      );
+
+      console.log("Filtered trades:", approvedTrades);
+      return approvedTrades.length;
+    } catch (error) {
+      console.error("Error fetching approved trades:", error);
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch trades");
+    }
+  }
+);
+
 
 export const fetchWalletHistory = createAsyncThunk("wallet/fetchWalletHistory", async () => {
   const res = await axiosInstance.get("/wallet/wallet-history");

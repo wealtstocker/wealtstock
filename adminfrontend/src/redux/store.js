@@ -7,6 +7,7 @@ import fundReducer from './Slices/fundSlice';
 import balanceReducer from './Slices/balanceSlice';
 import siteConfigReducer from './Slices/siteConfigSlice';
 import withdrawalReducer from "./Slices/withdrawalSlice";
+import contactCallbackReducer from './Slices/contactCallbackSlice';
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -16,6 +17,7 @@ export const store = configureStore({
     fund: fundReducer,
     balance: balanceReducer,
     siteConfig: siteConfigReducer,
- withdrawals: withdrawalReducer,
+    withdrawals: withdrawalReducer,
+    contactCallback: contactCallbackReducer,
   },
 });

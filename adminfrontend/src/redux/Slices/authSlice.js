@@ -10,7 +10,7 @@ export const loginAdmin = createAsyncThunk(
       const { token, user, message } = response.data;
 
       localStorage.setItem("token", token);
-console.log(response)
+// console.log(response)
       return { user, message };
     } catch (error) {
        console.error(error)

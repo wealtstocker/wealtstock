@@ -1,12 +1,22 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { FaMapMarkerAlt, FaEnvelope, FaPhoneAlt } from "react-icons/fa";
 import gsap from "gsap";
+import { toast, ToastContainer } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
+import axiosInstance from "../../api/axiosInstance";
 
 const ContactSection = () => {
   const headingRef = useRef(null);
   const boxRef = useRef(null);
   const cardsRef = useRef([]);
   const formRef = useRef(null);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    message: ""
+  });
 
   useEffect(() => {
     gsap.fromTo(
@@ -38,8 +48,33 @@ const ContactSection = () => {
     );
   }, []);
 
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    const response = await axiosInstance.post("contact", formData);
+
+    if (response.data.success) {
+      toast.success("Message sent successfully!");
+      setFormData({ name: "", email: "", message: "",phone:"" });
+    } else {
+      toast.error(response.data.error || "Something went wrong.");
+    }
+  } catch (error) {
+    console.error(error);
+    toast.error("Network error. Please try again later.");
+  }
+};
+
+
   return (
     <section className="bg-gray-50 px-6 py-16">
+      <ToastContainer position="top-right" autoClose={3000} />
+
       {/* Heading */}
       <h2
         ref={headingRef}
@@ -68,26 +103,44 @@ const ContactSection = () => {
         </div>
 
         {/* Contact Form */}
-        <div
-          ref={formRef}
-          className="bg-white p-6 rounded-xl shadow-md"
-        >
+        <div ref={formRef} className="bg-white p-6 rounded-xl shadow-md">
           <h3 className="text-xl font-semibold text-blue-700 mb-4">Send Us a Message</h3>
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <input
               type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
               placeholder="Your Name"
               className="w-full border px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-400"
+
             />
             <input
               type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
               placeholder="Your Email"
               className="w-full border px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-400"
+
+            />
+            <input
+              type="number"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="Your Email"
+              className="w-full border px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-400"
+              required
             />
             <textarea
+              name="message"
               rows="4"
+              value={formData.message}
+              onChange={handleChange}
               placeholder="Your Message"
               className="w-full border px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-400"
+
             ></textarea>
             <button
               type="submit"

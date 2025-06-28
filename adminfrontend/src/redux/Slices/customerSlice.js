@@ -51,10 +51,29 @@ export const deactivateCustomer = createAsyncThunk(
     try {
       const res = await axiosInstance.put(`/customer/deactivate/${id}`);
       Toast.success(res.data.message || 'Customer deactivated');
+      console.log("deactivateCustomer", res)
       return id;
     } catch (err) {
+      console.error("deactivateCustomer", err)
       Toast.error(err.response?.data?.message || 'Deactivation failed');
       return rejectWithValue(err.response?.data?.message || 'Deactivation failed');
+    }
+  }
+);
+
+/* -------------------- 6. Activate Customer -------------------- */
+export const activateCustomer = createAsyncThunk(
+  'customer/activateCustomer',
+  async (id, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.put(`/customer/activate/${id}`);
+      Toast.success(res.data.message || 'Customer activated');
+      console.log("activateCustomer", res)
+      return id;
+    } catch (err) {
+      console.error("activateCustomer", err)
+      Toast.error(err.response?.data?.message || 'Activation failed');
+      return rejectWithValue(err.response?.data?.message || 'Activation failed');
     }
   }
 );
@@ -88,20 +107,6 @@ export const deleteCustomerPermanently = createAsyncThunk(
   }
 );
 
-/* -------------------- 6. Activate Customer -------------------- */
-export const activateCustomer = createAsyncThunk(
-  'customer/activateCustomer',
-  async (id, { rejectWithValue }) => {
-    try {
-      const res = await axiosInstance.put(`/customer/activate/${id}`);
-      Toast.success(res.data.message || 'Customer activated');
-      return id;
-    } catch (err) {
-      Toast.error(err.response?.data?.message || 'Activation failed');
-      return rejectWithValue(err.response?.data?.message || 'Activation failed');
-    }
-  }
-);
 
 /* -------------------- 7. Change Password -------------------- */
 export const changePassword = createAsyncThunk(

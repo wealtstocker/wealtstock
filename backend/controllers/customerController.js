@@ -89,14 +89,40 @@ export async function updateCustomer(req, res) {
 export async function deactivateCustomer(req, res) {
   const { id } = req.params;
   try {
-    await pool.query("UPDATE customers SET is_active = false WHERE id = ?", [
-      id,
-    ]);
+    await pool.query("UPDATE customers SET is_active = false WHERE id = ?", [id]);
     res.json({ status: true, message: "Customer deactivated" });
   } catch (err) {
     res.status(500).json({
       status: false,
-      message: "Error deleting customer",
+      message: "Error deactivating customer",
+      error: err.message,
+    });
+  }
+}
+
+export async function activateCustomer(req, res) {
+  const { id } = req.params;
+  try {
+    const [rows] = await pool.query("SELECT * FROM customers WHERE id = ?", [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ status: false, message: "Customer not found" });
+    }
+
+    const customer = rows[0];
+    await pool.query("UPDATE customers SET is_active = true WHERE id = ?", [id]);
+
+    const credentials = `Your WealthStock account is now active.\nLogin ID: ${customer.id}\nPassword: ${customer.password_hash}`;
+console.log("-------------------", credentials)
+    await sendSMS(customer.phone_number, credentials);
+
+    res.json({
+      status: true,
+      message: "Customer activated and SMS sent.",
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: false,
+      message: "Error activating customer",
       error: err.message,
     });
   }
@@ -120,46 +146,6 @@ export async function deleteCustomer(req, res) {
 }
 
 
-export async function activateCustomer(req, res) {
-  const { id } = req.params;
-
-  try {
-    const [rows] = await pool.query("SELECT * FROM customers WHERE id = ?", [
-      id,
-    ]);
-    if (rows.length === 0) {
-      return res
-        .status(404)
-        .json({ status: false, message: "Customer not found" });
-    }
-
-    const customer = rows[0];
-    await pool.query("UPDATE customers SET is_active = true WHERE id = ?", [
-      id,
-    ]);
-
-    // Credentials to send
-    const credentials = `Your Account has been activated.\nLogin ID: ${customer.id}\nPassword: ${customer.password_hash}`;
-
-    // ✅ Send SMS
-    // console.log("customer---", customer);
-    await sendSMS(customer.phone_number, credentials);
-
-    // ✅ Optional: Send WhatsApp
-    // await sendWhatsAppMessage(customer.phone_number, credentials);
-
-    res.json({
-      status: true,
-      message: "Customer activated and notified successfully",
-    });
-  } catch (err) {
-    res.status(500).json({
-      status: false,
-      message: "Error activating customer",
-      error: err.message,
-    });
-  }
-}
 
 export async function changePassword(req, res) {
   const customerId = req.user.id;

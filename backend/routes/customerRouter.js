@@ -21,7 +21,7 @@ router.get("/", getAllCustomers);
 router.get("/bank",authenticate, BankAccount);
 router.get("/:id", getCustomerById);
 router.put("/:id", updateCustomer);
-router.delete("/deactivate/:id", deactivateCustomer);
+router.put("/deactivate/:id", deactivateCustomer);
 router.put("/activate/:id", activateCustomer);
 router.delete("/:id",authenticate,authorizeRoles("admin", "superadmin"), deleteCustomer);
 

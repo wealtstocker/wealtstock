@@ -15,16 +15,16 @@ export default function BreadcrumbNav() {
   const pathSegments = location.pathname.split("/").filter(Boolean);
 
   const breadcrumbItems = [
-    {
-      title: (
-        <span
-          className="text-blue-600 cursor-pointer hover:underline flex items-center gap-1"
-          onClick={() => navigate("/")}
-        >
-          <Home size={16} /> Home
-        </span>
-      ),
-    },
+    // {
+    //   title: (
+    //     <span
+    //       className="text-blue-600 cursor-pointer hover:underline flex items-center gap-1"
+    //       onClick={() => navigate("/")}
+    //     >
+    //       <Home size={16} /> Home
+    //     </span>
+    //   ),
+    // },
     ...pathSegments.map((segment, index) => {
       const path = `/${pathSegments.slice(0, index + 1).join("/")}`;
       const label = decodeURIComponent(segment.charAt(0).toUpperCase() + segment.slice(1));
@@ -34,7 +34,7 @@ export default function BreadcrumbNav() {
 
       return {
         title: isLast ? (
-          <span className="text-gray-500 flex items-center ">
+          <span className="text-gray-500 flex items-center gap-1s">
             {icon} {label}
           </span>
         ) : (

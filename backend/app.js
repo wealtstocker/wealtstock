@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./swaggerSpec.js";
 import cookieParser from "cookie-parser";
 import compression from "compression";
 import helmet from "helmet";
@@ -8,10 +10,8 @@ import userRoutes from "./routes/userRoutes.js";
 import walletNtransactionRoutes from "./routes/walletNtransactionRoutes.js";
 import tradeRoutes from "./routes/tradeRoutes.js";
 import siteConfigRoutes from "./routes/siteConfigRoutes.js";
-
-import swaggerUi from "swagger-ui-express";
-import swaggerSpec from "./swaggerSpec.js";
 import customersRouter from "./routes/customerRouter.js";
+import contactRoutes from "./routes/contactRoutes.js";
 
 const app = express();
 app.use(helmet());
@@ -40,7 +40,7 @@ app.use("/uploads/site", express.static("uploads/site"));
 app.use("/api/site-config", siteConfigRoutes);
 app.use("/api/wallet", walletNtransactionRoutes);
 app.use("/api/trade", tradeRoutes);
-
+app.use('/api', contactRoutes);
 app.get("/", (req, res) => {
   res.send("Welcome to Role-Based Auth API (MySQL + Node.js)");
 });

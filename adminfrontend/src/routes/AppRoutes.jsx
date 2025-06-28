@@ -17,6 +17,8 @@ import NotFound from "../components/NotFound";
 import PayoutScreen from "../pages/Dashboard/fund/PayoutScreen";
 import PayinScreen from "../pages/Dashboard/fund/PayinScreen";
 import AdminDashboard from "../pages/Dashboard";
+import CallbackRequest from "../pages/Dashboard/contact/CallbackRequest";
+import ContactMessages from "../pages/Dashboard/contact/Contactlist";
 
 const AppRoutes = () => {
   return (
@@ -40,6 +42,8 @@ const AppRoutes = () => {
         <Route path="withdrawal" element={<AdminWithdrawalList />} />
         <Route path="all-wallet" element={<AdminWalletManager />} />
         <Route path="site-config" element={<SiteConfigPage />} />
+        <Route path="contact" element={<ContactMessages />} />
+        <Route path="callback" element={<CallbackRequest />} />
         <Route path="*" element={<NotFound />} />
       </Route>
       <Route path="*" element={<NotFound />} />

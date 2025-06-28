@@ -60,6 +60,7 @@ const CustomerTable = () => {
     dispatch(action(cust.id)).then(() => dispatch(fetchAllCustomers()));
   };
 
+  
   const handleHardDelete = async (cust) => {
     const result = await Swal.fire({
       title: 'Are you sure?',

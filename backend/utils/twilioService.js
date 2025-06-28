@@ -9,10 +9,11 @@ const twilioPhone = process.env.TWILIO_PHONE;
 const client = twilio(accountSid, authToken);
 
 // ✅ SMS Function
+
 export async function sendSMS(phone, message) {
   try {
     const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
-    console.log("----", formattedPhone);
+    console.log("---------------------------------", formattedPhone)
     const response = await client.messages.create({
       body: message,
       from: twilioPhone,
@@ -21,7 +22,7 @@ export async function sendSMS(phone, message) {
     console.log("📩 SMS sent:", response.sid);
     return response;
   } catch (error) {
-    console.error("❌ SMS sending failed:", error.message);
+    console.error("❌ SMS failed:", error.message);
     throw error;
   }
 }

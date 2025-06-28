@@ -14,6 +14,8 @@ import {
   FileText,
   UserCheck,
   UserX,
+  Contact,
+  Contact2Icon,
 } from "lucide-react";
 import { BsBank } from "react-icons/bs";
 import { FaTimes } from "react-icons/fa";
@@ -128,7 +130,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
       ],
     },
     {
-      section: "Finance",
+      section: "wealthstocker",
       items: [
         // {
         //   icon: <BsBank size={18} />,
@@ -139,6 +141,16 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
           icon: <BsBank size={18} />,
           label: "Site Config",
           url: "/admin/site-config",
+        },
+        {
+          icon: <Contact size={18} />,
+          label: "Contact",
+          url: "/admin/contact",
+        },
+        {
+          icon: <Contact2Icon size={18} />,
+          label: "Callback",
+          url: "/admin/Callback",
         },
       ],
     },

@@ -86,7 +86,7 @@ export async function updateCustomer(req, res) {
   }
 }
 
-export async function deleteCustomer(req, res) {
+export async function deactivateCustomer(req, res) {
   const { id } = req.params;
   try {
     await pool.query("UPDATE customers SET is_active = false WHERE id = ?", [
@@ -101,6 +101,24 @@ export async function deleteCustomer(req, res) {
     });
   }
 }
+
+export async function deleteCustomer(req, res) {
+  const { id } = req.params;
+  try {
+    const result = await pool.query("DELETE FROM customers WHERE id = ?", [id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ status: false, message: "Customer not found" });
+    }
+    res.json({ status: true, message: "Customer permanently deleted" });
+  } catch (err) {
+    res.status(500).json({
+      status: false,
+      message: "Error deleting customer",
+      error: err.message,
+    });
+  }
+}
+
 
 export async function activateCustomer(req, res) {
   const { id } = req.params;

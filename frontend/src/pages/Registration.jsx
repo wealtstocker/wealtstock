@@ -55,28 +55,28 @@ const ExtendedRegisterForm = () => {
   };
 
   const validateForm = () => {
-    for (let key in formData) {
-      if (!formData[key]) {
-        Swal.fire(
-          "Validation Error",
-          `Please fill out the ${key.replace("_", " ")} field.`,
-          "error"
-        );
-        return false;
-      }
-    }
+    // for (let key in formData) {
+    //   if (!formData[key]) {
+    //     Swal.fire(
+    //       "Validation Error",
+    //       `Please fill out the ${key.replace("_", " ")} field.`,
+    //       "error"
+    //     );
+    //     return false;
+    //   }
+    // }
     if (formData.password !== formData.confirm_password) {
       Swal.fire("Validation Error", "Passwords do not match.", "error");
       return false;
     }
-    if (!document) {
-      Swal.fire(
-        "Validation Error",
-        "Please upload your Aadhar/PAN document.",
-        "error"
-      );
-      return false;
-    }
+    // if (!document) {
+    //   Swal.fire(
+    //     "Validation Error",
+    //     "Please upload your Aadhar/PAN document.",
+    //     "error"
+    //   );
+    //   return false;
+    // }
     return true;
   };
 

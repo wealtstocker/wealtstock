@@ -142,15 +142,15 @@ export async function registerCustomer(req, res) {
   }
 
   try {
-    const [existing] = await pool.query(
-      `SELECT * FROM customers WHERE email = ? OR phone_number = ? OR aadhar_number = ? OR pan_number = ?`,
-      [email, phone_number, aadhar_number, pan_number]
-    );
-    if (existing.length > 0) {
-      return res
-        .status(409)
-        .json({ status: false, message: "Customer already registered" });
-    }
+    // const [existing] = await pool.query(
+    //   `SELECT * FROM customers WHERE email = ? OR phone_number = ? OR aadhar_number = ? OR pan_number = ?`,
+    //   [email, phone_number, aadhar_number, pan_number]
+    // );
+    // if (existing.length > 0) {
+    //   return res
+    //     .status(409)
+    //     .json({ status: false, message: "Customer already registered" });
+    // }
 
     // const password_hash = await bcrypt.hash(password, 10);
     const password_hash = password;

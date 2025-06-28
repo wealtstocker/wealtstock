@@ -1,15 +1,28 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  Table, Input, Tag, Button, Space, Popconfirm, Modal
+  Table,
+  Input,
+  Tag,
+  Button,
+  Space,
+  Tooltip,
 } from 'antd';
 import {
   fetchAllCustomers,
-  deleteCustomer,
+  deleteCustomerPermanently,
   activateCustomer,
+  deactivateCustomer,
 } from '../../../redux/Slices/customerSlice';
 import Toast from '../../../services/toast';
-import { SearchOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
+import Swal from 'sweetalert2';
+import {
+  SearchOutlined,
+  EyeOutlined,
+  EditOutlined,
+  CopyOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons';
 import CustomerViewModal from './CustomerViewModal';
 import CustomerEditModal from './CustomerEditModal';
 
@@ -37,9 +50,32 @@ const CustomerTable = () => {
     );
   }, [searchText, customers]);
 
-  const handleToggle = async (cust) => {
-    const action = cust.is_active ? deleteCustomer : activateCustomer;
+  const handleCopy = (text, label = 'Copied') => {
+    navigator.clipboard.writeText(text);
+    Toast.success(`${label} copied to clipboard`);
+  };
+
+  const handleToggleStatus = async (cust) => {
+    const action = cust.is_active ? deactivateCustomer : activateCustomer;
     dispatch(action(cust.id)).then(() => dispatch(fetchAllCustomers()));
+  };
+
+  const handleHardDelete = async (cust) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Permanently delete customer "${cust.full_name}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete permanently',
+    });
+
+    if (result.isConfirmed) {
+      dispatch(deleteCustomerPermanently(cust.id)).then(() =>
+        dispatch(fetchAllCustomers())
+      );
+    }
   };
 
   const columns = useMemo(
@@ -47,6 +83,22 @@ const CustomerTable = () => {
       {
         title: '#',
         render: (_, __, index) => index + 1,
+      },
+      {
+        title: 'Customer ID',
+        dataIndex: 'id',
+        render: (id) => (
+          <Space>
+            {id}
+            <Tooltip title="Copy ID">
+              <Button
+                size="small"
+                icon={<CopyOutlined />}
+                onClick={() => handleCopy(id, 'Customer ID')}
+              />
+            </Tooltip>
+          </Space>
+        ),
       },
       {
         title: 'Name',
@@ -76,33 +128,46 @@ const CustomerTable = () => {
         onFilter: (value, record) => record.is_active === value,
       },
       {
-        title: 'Action',
+        title: 'Actions',
         render: (_, record) => (
           <Space>
-            <Button
-              icon={<EyeOutlined />}
-              onClick={() => {
-                setSelectedCustomer(record);
-                setViewModal(true);
-              }}
-            />
-            <Button
-              icon={<EditOutlined />}
-              onClick={() => {
-                setSelectedCustomer(record);
-                setEditModal(true);
-              }}
-            />
-            <Popconfirm
-              title={`Are you sure to ${record.is_active ? 'deactivate' : 'activate'} this customer?`}
-              onConfirm={() => handleToggle(record)}
-              okText="Yes"
-              cancelText="No"
-            >
-              <Button type="primary">
+            <Tooltip title="View Details">
+              <Button
+                icon={<EyeOutlined />}
+                onClick={() => {
+                  setSelectedCustomer(record);
+                  setViewModal(true);
+                }}
+              />
+            </Tooltip>
+
+            <Tooltip title="Edit">
+              <Button
+                icon={<EditOutlined />}
+                onClick={() => {
+                  setSelectedCustomer(record);
+                  setEditModal(true);
+                }}
+              />
+            </Tooltip>
+
+            <Tooltip title={record.is_active ? 'Deactivate' : 'Activate'}>
+              <Button
+                type={record.is_active ? 'default' : 'primary'}
+                onClick={() => handleToggleStatus(record)}
+              >
                 {record.is_active ? 'Deactivate' : 'Activate'}
               </Button>
-            </Popconfirm>
+            </Tooltip>
+
+            <Tooltip title="Hard Delete">
+              <Button
+                type="primary"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleHardDelete(record)}
+              />
+            </Tooltip>
           </Space>
         ),
       },

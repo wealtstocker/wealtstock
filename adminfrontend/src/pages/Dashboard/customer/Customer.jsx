@@ -25,9 +25,11 @@ import {
 } from '@ant-design/icons';
 import CustomerViewModal from './CustomerViewModal';
 import CustomerEditModal from './CustomerEditModal';
+import { useNavigate } from 'react-router-dom';
 
 const CustomerTable = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { all: customers, loading } = useSelector((state) => state.customer);
 
   const [searchText, setSearchText] = useState('');
@@ -44,8 +46,8 @@ const CustomerTable = () => {
     setFilteredData(
       searchText
         ? customers.filter((c) =>
-            c.full_name?.toLowerCase().includes(searchText.toLowerCase())
-          )
+          c.full_name?.toLowerCase().includes(searchText.toLowerCase())
+        )
         : customers
     );
   }, [searchText, customers]);
@@ -60,7 +62,7 @@ const CustomerTable = () => {
     dispatch(action(cust.id)).then(() => dispatch(fetchAllCustomers()));
   };
 
-  
+
   const handleHardDelete = async (cust) => {
     const result = await Swal.fire({
       title: 'Are you sure?',
@@ -135,10 +137,7 @@ const CustomerTable = () => {
             <Tooltip title="View Details">
               <Button
                 icon={<EyeOutlined />}
-                onClick={() => {
-                  setSelectedCustomer(record);
-                  setViewModal(true);
-                }}
+                onClick={() => navigate(`/admin/customer/${record.id}`)}
               />
             </Tooltip>
 
@@ -188,6 +187,11 @@ const CustomerTable = () => {
       <Table
         columns={columns}
         dataSource={filteredData.map((c) => ({ ...c, key: c.id }))}
+        rowKey="id"
+        onRow={(record) => ({
+          onClick: () => navigate(`/admin/customer/${record.id}`),
+          style: { cursor: 'pointer' }, // Optional: changes cursor on hover
+        })}
         loading={loading}
         pagination={{ pageSize: 10 }}
         bordered

@@ -22,8 +22,10 @@ export const fetchCustomerById = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const res = await axiosInstance.get(`/customer/${id}`);
+      console.log("res", res)
       return res.data.customer;
     } catch (err) {
+      console.error("error", err)
       return rejectWithValue(err.response?.data?.message || 'Failed to fetch customer');
     }
   }

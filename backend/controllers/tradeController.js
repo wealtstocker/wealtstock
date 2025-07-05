@@ -192,157 +192,259 @@ export const updateTrade = async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
 
+  const isAdmin = req.user?.role === 'admin';
+  const userId = req.user?.id;
+
   try {
-    // 1. Fetch the original trade
-    const [tradeRows] = await pool.query(
-      `SELECT * FROM trades WHERE id = ? AND is_active = TRUE`,
-      [id]
-    );
+    // 1. Fetch existing trade
+    const [oldTradeRows] = await pool.query(`SELECT * FROM trades WHERE id = ? AND is_active = TRUE`, [id]);
+    if (!oldTradeRows.length) return res.status(404).json({ message: "Trade not found" });
 
-    if (!tradeRows.length) {
-      return res.status(404).json({ message: "Trade not found" });
-    }
+    const oldTrade = oldTradeRows[0];
 
-    const oldTrade = tradeRows[0];
+    // 2. Recalculate
+    const buy_price = parseFloat(updates.buy_price || oldTrade.buy_price);
+    const buy_quantity = parseInt(updates.buy_quantity || oldTrade.buy_quantity);
+    const exit_price = parseFloat(updates.exit_price || oldTrade.exit_price);
+    const exit_quantity = parseInt(updates.exit_quantity || oldTrade.exit_quantity);
+    const brokerage = parseFloat(updates.brokerage || oldTrade.brokerage || 0);
 
-    // Assume `created_by` is controlled from backend (e.g., session)
-    const isAdmin = true; // 🔐 Hardcoded for now — use real user auth
-    const isApproved = updates.status === "approved";
+    const buy_value = buy_price * buy_quantity;
+    const exit_value = exit_price * exit_quantity;
+    const netPnl = exit_value - buy_value - brokerage;
+    const profit_loss = netPnl >= 0 ? 'profit' : 'loss';
+    const profit_loss_value = Math.abs(netPnl).toFixed(2);
 
-    // 2. Reverse old transaction (if any)
-    const oldTxnDesc = `Trade ${
-      oldTrade.profit_loss === "profit" ? "credit" : "debit"
-    } for Trade No: ${oldTrade.trade_number}`;
-
-    const [txnRows] = await pool.query(
-      `SELECT * FROM transactions WHERE description = ? AND customer_id = ? AND is_reversed = FALSE`,
-      [oldTxnDesc, oldTrade.customer_id]
-    );
-
-    let currentBalance = 0;
+    // 3. Fetch wallet
     const [walletRows] = await pool.query(
-      `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1`,
+      `SELECT * FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1`,
       [oldTrade.customer_id]
     );
-    if (walletRows.length) {
-      currentBalance = parseFloat(walletRows[0].balance);
-    }
 
-    if (txnRows.length) {
-      const txn = txnRows[0];
-      const rollbackAmount = parseFloat(txn.amount);
+    let currentBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
 
-      currentBalance =
-        txn.type === "credit"
-          ? currentBalance - rollbackAmount
-          : currentBalance + rollbackAmount;
-
-      await pool.query(`DELETE FROM wallets WHERE transaction_id = ?`, [txn.id]);
-      await pool.query(`DELETE FROM transactions WHERE id = ?`, [txn.id]);
-    }
-
-    // 3. Recalculate trade values
-    const buyValue = parseFloat(updates.buy_price) * parseFloat(updates.buy_quantity);
-    const exitValue = parseFloat(updates.exit_price) * parseFloat(updates.exit_quantity);
-    const brokerage = parseFloat(updates.brokerage || 0);
-    const netPnl = exitValue - buyValue - brokerage;
-    const profitLossValue = Math.abs(netPnl).toFixed(2);
-    const profitLoss = netPnl >= 0 ? "profit" : "loss";
-
-    // Update calculated fields
-    const {
-      customer_id,
-      instrument,
-      buy_price,
-      buy_quantity,
-      exit_price,
-      exit_quantity,
-      status,
-    } = updates;
-
-    const updateFields = {
-      customer_id,
-      instrument,
-      buy_price,
-      buy_quantity,
-      buy_value,
-      exit_price,
-      exit_quantity,
-      exit_value,
-      brokerage,
-      profit_loss: profitLoss,
-      profit_loss_value: profitLossValue,
-      status,
-      updated_at: new Date(),
-    };
-
-    // 4. Admin balance check if trade is a loss
-    if (isAdmin && isApproved && profitLoss === "loss") {
-      if (currentBalance < parseFloat(profitLossValue)) {
-        return res.status(400).json({
-          message: "Insufficient balance for loss trade",
-          currentBalance,
-          required: profitLossValue,
-        });
+    if (isAdmin && updates.status === 'approved') {
+      if (profit_loss === 'loss' && currentBalance < parseFloat(profit_loss_value)) {
+        return res.status(400).json({ message: 'Insufficient balance for loss trade' });
       }
     }
 
-    // 5. Update the trade securely (avoid SET ?)
+    // 4. Delete old trade (soft delete)
+    await pool.query(`UPDATE trades SET is_active = FALSE WHERE id = ?`, [id]);
+
+    // 5. Insert new trade with same ID
     await pool.query(
-      `UPDATE trades SET
-        customer_id = ?, instrument = ?, buy_price = ?, buy_quantity = ?,
-        buy_value = ?, exit_price = ?, exit_quantity = ?, exit_value = ?,
-        brokerage = ?, profit_loss = ?, profit_loss_value = ?, status = ?, updated_at = ?
-      WHERE id = ?`,
+      `INSERT INTO trades (
+        id, customer_id, instrument, buy_price, buy_quantity, buy_value,
+        exit_price, exit_quantity, exit_value, brokerage, profit_loss,
+        profit_loss_value, status, created_by, updated_by, entry_date, exit_date, updated_at, is_active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
       [
-        updateFields.customer_id,
-        updateFields.instrument,
-        updateFields.buy_price,
-        updateFields.buy_quantity,
-        updateFields.buy_value,
-        updateFields.exit_price,
-        updateFields.exit_quantity,
-        updateFields.exit_value,
-        updateFields.brokerage,
-        updateFields.profit_loss,
-        updateFields.profit_loss_value,
-        updateFields.status,
-        updateFields.updated_at,
         id,
+        oldTrade.customer_id,
+        updates.instrument || oldTrade.instrument,
+        buy_price,
+        buy_quantity,
+        buy_value,
+        exit_price,
+        exit_quantity,
+        exit_value,
+        brokerage,
+        profit_loss,
+        profit_loss_value,
+        updates.status || oldTrade.status,
+        oldTrade.created_by,
+        userId,
+        oldTrade.entry_date,
+        updates.exit_price ? new Date() : oldTrade.exit_date,
+        new Date()
       ]
     );
 
-    // 6. Create transaction and wallet if admin and approved
-    if (isAdmin && isApproved) {
-      const txnType = profitLoss === "profit" ? "credit" : "debit";
-      const newDesc = `Trade ${txnType} for Trade No: ${oldTrade.trade_number}`;
-
-      const [txnResult] = await pool.query(
-        `INSERT INTO transactions (customer_id, type, status, amount, description)
-         VALUES (?, ?, 'completed', ?, ?)`,
-        [oldTrade.customer_id, txnType, profitLossValue, newDesc]
-      );
-
-      const txnId = txnResult.insertId;
-
-      const newBalance =
-        txnType === "credit"
-          ? currentBalance + parseFloat(profitLossValue)
-          : currentBalance - parseFloat(profitLossValue);
+    // 6. Update wallet
+    if (updates.status === 'approved') {
+      let newBalance = profit_loss === 'profit'
+        ? currentBalance + parseFloat(profit_loss_value)
+        : currentBalance - parseFloat(profit_loss_value);
 
       await pool.query(
-        `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
-         VALUES (?, ?, ?, ?, ?)`,
-        [oldTrade.customer_id, profitLossValue, txnType, newBalance, txnId]
+        `INSERT INTO wallets (customer_id, trade_id, balance, amount, type, created_by, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          oldTrade.customer_id,
+          id,
+          newBalance,
+          profit_loss_value,
+          profit_loss,
+          userId,
+          new Date()
+        ]
       );
     }
 
-    res.status(200).json({ message: "Trade updated successfully" });
+    return res.status(200).json({ message: 'Trade updated successfully with new record' });
   } catch (error) {
-    console.error("❌ Error in updateTrade:", error.message);
-    res.status(500).json({ message: "Failed to update trade" });
+    console.error("❌ updateTrade error:", error.message);
+    res.status(500).json({ message: 'Failed to update and replace trade' });
   }
 };
+
+
+// export const updateTrade = async (req, res) => {
+//   const { id } = req.params;
+//   const updates = req.body;
+
+//   try {
+//     // 1. Fetch the original trade
+//     const [tradeRows] = await pool.query(
+//       `SELECT * FROM trades WHERE id = ? AND is_active = TRUE`,
+//       [id]
+//     );
+
+//     if (!tradeRows.length) {
+//       return res.status(404).json({ message: "Trade not found" });
+//     }
+
+//     const oldTrade = tradeRows[0];
+
+//     // Assume `created_by` is controlled from backend (e.g., session)
+//     const isAdmin = true; // 🔐 Hardcoded for now — use real user auth
+//     const isApproved = updates.status === "approved";
+
+//     // 2. Reverse old transaction (if any)
+//     const oldTxnDesc = `Trade ${
+//       oldTrade.profit_loss === "profit" ? "credit" : "debit"
+//     } for Trade No: ${oldTrade.trade_number}`;
+
+//     const [txnRows] = await pool.query(
+//       `SELECT * FROM transactions WHERE description = ? AND customer_id = ? AND is_reversed = FALSE`,
+//       [oldTxnDesc, oldTrade.customer_id]
+//     );
+
+//     let currentBalance = 0;
+//     const [walletRows] = await pool.query(
+//       `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1`,
+//       [oldTrade.customer_id]
+//     );
+//     if (walletRows.length) {
+//       currentBalance = parseFloat(walletRows[0].balance);
+//     }
+
+//     if (txnRows.length) {
+//       const txn = txnRows[0];
+//       const rollbackAmount = parseFloat(txn.amount);
+
+//       currentBalance =
+//         txn.type === "credit"
+//           ? currentBalance - rollbackAmount
+//           : currentBalance + rollbackAmount;
+
+//       await pool.query(`DELETE FROM wallets WHERE transaction_id = ?`, [txn.id]);
+//       await pool.query(`DELETE FROM transactions WHERE id = ?`, [txn.id]);
+//     }
+
+//     // 3. Recalculate trade values
+//     const buyValue = parseFloat(updates.buy_price) * parseFloat(updates.buy_quantity);
+//     const exitValue = parseFloat(updates.exit_price) * parseFloat(updates.exit_quantity);
+//     const brokerage = parseFloat(updates.brokerage || 0);
+//     const netPnl = exitValue - buyValue - brokerage;
+//     const profitLossValue = Math.abs(netPnl).toFixed(2);
+//     const profitLoss = netPnl >= 0 ? "profit" : "loss";
+
+//     // Update calculated fields
+//     const {
+//       customer_id,
+//       instrument,
+//       buy_price,
+//       buy_quantity,
+//       exit_price,
+//       exit_quantity,
+//       status,
+//     } = updates;
+
+//     const updateFields = {
+//       customer_id,
+//       instrument,
+//       buy_price,
+//       buy_quantity,
+//       buy_value,
+//       exit_price,
+//       exit_quantity,
+//       exit_value,
+//       brokerage,
+//       profit_loss: profitLoss,
+//       profit_loss_value: profitLossValue,
+//       status,
+//       updated_at: new Date(),
+//     };
+
+//     // 4. Admin balance check if trade is a loss
+//     if (isAdmin && isApproved && profitLoss === "loss") {
+//       if (currentBalance < parseFloat(profitLossValue)) {
+//         return res.status(400).json({
+//           message: "Insufficient balance for loss trade",
+//           currentBalance,
+//           required: profitLossValue,
+//         });
+//       }
+//     }
+
+//     // 5. Update the trade securely (avoid SET ?)
+//     await pool.query(
+//       `UPDATE trades SET
+//         customer_id = ?, instrument = ?, buy_price = ?, buy_quantity = ?,
+//         buy_value = ?, exit_price = ?, exit_quantity = ?, exit_value = ?,
+//         brokerage = ?, profit_loss = ?, profit_loss_value = ?, status = ?, updated_at = ?
+//       WHERE id = ?`,
+//       [
+//         updateFields.customer_id,
+//         updateFields.instrument,
+//         updateFields.buy_price,
+//         updateFields.buy_quantity,
+//         updateFields.buy_value,
+//         updateFields.exit_price,
+//         updateFields.exit_quantity,
+//         updateFields.exit_value,
+//         updateFields.brokerage,
+//         updateFields.profit_loss,
+//         updateFields.profit_loss_value,
+//         updateFields.status,
+//         updateFields.updated_at,
+//         id,
+//       ]
+//     );
+
+//     // 6. Create transaction and wallet if admin and approved
+//     if (isAdmin && isApproved) {
+//       const txnType = profitLoss === "profit" ? "credit" : "debit";
+//       const newDesc = `Trade ${txnType} for Trade No: ${oldTrade.trade_number}`;
+
+//       const [txnResult] = await pool.query(
+//         `INSERT INTO transactions (customer_id, type, status, amount, description)
+//          VALUES (?, ?, 'completed', ?, ?)`,
+//         [oldTrade.customer_id, txnType, profitLossValue, newDesc]
+//       );
+
+//       const txnId = txnResult.insertId;
+
+//       const newBalance =
+//         txnType === "credit"
+//           ? currentBalance + parseFloat(profitLossValue)
+//           : currentBalance - parseFloat(profitLossValue);
+
+//       await pool.query(
+//         `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
+//          VALUES (?, ?, ?, ?, ?)`,
+//         [oldTrade.customer_id, profitLossValue, txnType, newBalance, txnId]
+//       );
+//     }
+
+//     res.status(200).json({ message: "Trade updated successfully" });
+//   } catch (error) {
+//     console.error("❌ Error in updateTrade:", error.message);
+//     res.status(500).json({ message: "Failed to update trade" });
+//   }
+// };
 
 
 // ✅ DELETE Trade (with wallet & txn rollback if admin)

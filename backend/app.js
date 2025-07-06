@@ -32,10 +32,7 @@ app.use(
 );
 
 // ✅ Allow specific frontend origins
-const allowedOrigins = [
-  process.env.USER_FRONTEND || "http://localhost:5173",
-  process.env.ADMIN_FRONTEND || "http://localhost:5174",
-];
+const allowedOrigins = [process.env.USER_FRONTEND, process.env.ADMIN_FRONTEND];
 
 console.log("Allowed Frontends:", allowedOrigins);
 

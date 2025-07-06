@@ -1,9 +1,27 @@
+import path from "path";
+import fs from "fs";
 import pool from "../config/db.js";
+
+const sanitizeFileName = (filename) => filename.replace(/\s+/g, "_");
 
 export async function addFundRequest(req, res) {
   const customerId = req.user.id;
   const { amount, method, utr_number, note } = req.body;
-  const screenshot = req.file?.path?.replace(/\\/g, "/") || null;
+
+  let screenshot = null;
+  if (req.file && req.file.filename) {
+    const sanitized = sanitizeFileName(req.file.filename);
+    const uploadDir = path.resolve("uploads/screenshots");
+    const oldPath = path.join(uploadDir, req.file.filename);
+    const newPath = path.join(uploadDir, sanitized);
+
+    if (req.file.filename !== sanitized && fs.existsSync(oldPath)) {
+      fs.renameSync(oldPath, newPath);
+    }
+
+    const baseUrl = `${req.protocol}://${req.get("host")}/uploads/screenshots`;
+    screenshot = `${baseUrl}/${sanitized}`;
+  }
 
   if (!amount || isNaN(amount) || amount <= 0 || !utr_number) {
     return res.status(400).json({ message: "Amount and UTR number are required", error: "Invalid input" });

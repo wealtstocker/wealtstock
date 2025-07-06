@@ -16,6 +16,7 @@ const AdminFundRequestList = () => {
   const { all: customers, loading: customerLoading } = useSelector(
     (state) => state.customer
   );
+  console.log(fundRequests)
 
   const [filteredData, setFilteredData] = useState([]);
   const [search, setSearch] = useState("");

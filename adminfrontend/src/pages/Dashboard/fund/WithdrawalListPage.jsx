@@ -19,10 +19,9 @@ import {
   MailOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  fetchAllWithdrawals,
-  updateWithdrawalStatus,
-} from "../../../redux/Slices/withdrawalSlice";
+import { useNavigate } from "react-router-dom";
+import { fetchAllWithdrawals } from "../../../redux/Slices/withdrawalSlice";
+import { updateWithdrawalStatus } from "../../../redux/Slices/walletSlice";
 import Toast from "../../../services/toast";
 
 const { Title } = Typography;
@@ -30,40 +29,39 @@ const { Option } = Select;
 
 const AdminWithdrawalList = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { list, loading } = useSelector((state) => state.withdrawals);
-
-  const [filterStatus, setFilterStatus] = useState("requested");
+  const [filterStatus, setFilterStatus] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    dispatch(fetchAllWithdrawals(filterStatus));
-  }, [dispatch, filterStatus]);
+    dispatch(fetchAllWithdrawals());
+  }, [dispatch]);
 
-  const handleApprove = async (record) => {
+  const handleWithdrawalAction = async (withdrawalId, action) => {
     try {
-      await dispatch(
-        updateWithdrawalStatus({ withdrawal_id: record.withdrawal_id, action: "approve" })
-      ).unwrap();
-      Toast.success("✅ Withdrawal approved");
+      await dispatch(updateWithdrawalStatus({ withdrawal_id: withdrawalId, action })).unwrap();
+      Toast.success(`✅ Withdrawal ${action}d`);
+      dispatch(fetchAllWithdrawals());
     } catch (err) {
-      Toast.error(err);
+      console.error(err);
+      Toast.error(err?.message || `❌ Failed to ${action} withdrawal`);
     }
   };
 
-  const handleReject = async (record) => {
-    try {
-      await dispatch(
-        updateWithdrawalStatus({ withdrawal_id: record.withdrawal_id, action: "reject" })
-      ).unwrap();
-      Toast.success("❌ Withdrawal rejected");
-    } catch (err) {
-      Toast.error(err);
-    }
+  const handleViewCustomer = (customerId) => {
+    navigate(`/admin/customer/${customerId}`);
   };
 
-  const filteredData = list.filter((item) =>
-    item.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = list
+    .filter((item) =>
+      item.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.customer_id.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .filter((item) =>
+      !filterStatus || item.status === filterStatus
+    );
 
   const statusTag = (status) => {
     let color = "default";
@@ -82,6 +80,8 @@ const AdminWithdrawalList = () => {
         color = "orange";
         icon = <ClockCircleOutlined />;
         break;
+      default:
+        color = "default";
     }
 
     return <Tag icon={icon} color={color}>{status.toUpperCase()}</Tag>;
@@ -92,6 +92,13 @@ const AdminWithdrawalList = () => {
       title: "Customer ID",
       dataIndex: "customer_id",
       key: "customer_id",
+      render: (text) => (
+        <Tooltip title="View Customer Details">
+          <a onClick={() => handleViewCustomer(text)} className="text-indigo-600 hover:underline">
+            {text}
+          </a>
+        </Tooltip>
+      ),
       responsive: ["md"],
     },
     {
@@ -99,24 +106,24 @@ const AdminWithdrawalList = () => {
       dataIndex: "full_name",
       key: "full_name",
       render: (text) => (
-        <span>
+        <span >
           <UserOutlined className="mr-1" />
-          {text}
+          {text || '-'}
         </span>
       ),
     },
-    {
-      title: "Email",
-      dataIndex: "email",
-      key: "email",
-      render: (text) => (
-        <span>
-          <MailOutlined className="mr-1" />
-          {text}
-        </span>
-      ),
-      responsive: ["md"],
-    },
+    // {
+    //   title: "Email",
+    //   dataIndex: "email",
+    //   key: "email",
+    //   render: (text) => (
+    //     <span>
+    //       <MailOutlined className="mr-1" />
+    //       {text || '-'}
+    //     </span>
+    //   ),
+    //   responsive: ["md"],
+    // },
     {
       title: "Amount",
       dataIndex: "amount",
@@ -137,14 +144,14 @@ const AdminWithdrawalList = () => {
       responsive: ["md"],
     },
     {
-      title: "Action",
+      title: "Actions",
       key: "actions",
       render: (_, record) =>
-        record.status === "" ? (
-          <Space>
+        record.status === "requested" ? (
+          <Space size="small">
             <Popconfirm
               title="Are you sure to approve this withdrawal?"
-              onConfirm={() => handleApprove(record)}
+              onConfirm={() => handleWithdrawalAction(record.withdrawal_id, "approve")}
               okText="Yes"
               cancelText="No"
             >
@@ -154,10 +161,9 @@ const AdminWithdrawalList = () => {
                 </Button>
               </Tooltip>
             </Popconfirm>
-
             <Popconfirm
               title="Are you sure to reject this withdrawal?"
-              onConfirm={() => handleReject(record)}
+              onConfirm={() => handleWithdrawalAction(record.withdrawal_id, "reject")}
               okText="Yes"
               cancelText="No"
             >
@@ -169,26 +175,25 @@ const AdminWithdrawalList = () => {
             </Popconfirm>
           </Space>
         ) : (
-          <Tag color={record.status === "completed" ? "green" : "red"}>
-            {record.status.toUpperCase()}
-          </Tag>
+          statusTag(record.status)
         ),
     },
   ];
 
   return (
-    <div className="p-4 w-full ">
-      <Title level={3}>💸 Admin – Withdrawal Management</Title>
+    <div className="p-4 max-w-7xl mx-auto">
+      <Title level={3} className="text-indigo-700 mb-6">
+        💸 Withdrawal Management
+      </Title>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
         <Input
-          placeholder="🔍 Search by name"
+          placeholder="🔍 Search by name, email, or ID"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full md:w-1/3"
           allowClear
         />
-
         <Select
           placeholder="📊 Filter by status"
           value={filterStatus}
@@ -210,7 +215,9 @@ const AdminWithdrawalList = () => {
         loading={loading}
         locale={{ emptyText: <Empty description="No withdrawals found" /> }}
         pagination={{ pageSize: 10, showSizeChanger: false }}
-        scroll={{ x: true }}
+        rowClassName="cursor-pointer hover:bg-gray-50"
+
+        scroll={{ x: 'max-content' }}
         bordered
       />
     </div>

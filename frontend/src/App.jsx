@@ -14,7 +14,7 @@ import Contact from "./pages/Contact/Contact";
 import Registration from "./pages/Registration";
 import Login from "./pages/Login";
 import NotFound from "./components/NotFound";
-import Dashboard from "./pages/Dashboard/Dashboard";
+
 import ProfilePage from "./pages/Dashboard/profile/Profile";
 import TradeReportPage from "./pages/Dashboard/trade/TradeReportPage";
 import MarketPage from "./pages/Dashboard/trade/MarketPage";

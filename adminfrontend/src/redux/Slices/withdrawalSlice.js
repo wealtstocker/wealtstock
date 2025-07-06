@@ -1,47 +1,35 @@
-// src/redux/Slices/withdrawalSlice.js
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axiosInstance from "../../lib/axiosInstance";
 
-export const getAllWithdrawalsAPI = (status = "") =>
-  axiosInstance.get(`/wallet/all-withdrawals${status ? `?status=${status}` : ""}`);
-
-export const updateWithdrawalStatusAPI = (payload) =>
-  axiosInstance.patch(`/wallet/withdrawal/status`, payload);
-
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axiosInstance from '../../lib/axiosInstance';
 
 export const fetchAllWithdrawals = createAsyncThunk(
-  "withdrawals/fetchAll",
-  async (status = "", thunkAPI) => {
+  'withdrawals/fetchAll',
+  async (status, { rejectWithValue }) => {
     try {
-      const res = await getAllWithdrawalsAPI(status);
-      return res.data;
-    } catch (err) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message || "Fetch error");
+      const res = await axiosInstance.get(`/wallet/all-withdrawals`);
+      // console.log(res)
+      return res.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch withdrawals');
     }
   }
 );
 
-
 export const updateWithdrawalStatus = createAsyncThunk(
-  "withdrawals/updateStatus",
-  async ({ withdrawal_id, action }, thunkAPI) => {
+  'withdrawals/updateStatus',
+  async ({ withdrawal_id, action }, { rejectWithValue }) => {
     try {
-      const res = await updateWithdrawalStatusAPI({ withdrawal_id, action });
-      return res.data;
-    } catch (err) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message || "Update error");
+      const res = await axiosInstance.put(`/withdrawals/${withdrawal_id}`, { action });
+      return res.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || `Failed to ${action} withdrawal`);
     }
   }
 );
 
 const withdrawalSlice = createSlice({
-  name: "withdrawals",
-  initialState: {
-    list: [],
-    loading: false,
-    error: null,
-  },
-  reducers: {},
+  name: 'withdrawals',
+  initialState: { list: [], loading: false, error: null },
   extraReducers: (builder) => {
     builder
       .addCase(fetchAllWithdrawals.pending, (state) => {
@@ -56,12 +44,19 @@ const withdrawalSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-
+      .addCase(updateWithdrawalStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(updateWithdrawalStatus.fulfilled, (state, action) => {
-        const updatedId = action.meta.arg.withdrawal_id;
+        state.loading = false;
         state.list = state.list.map((item) =>
-          item.id === updatedId ? { ...item, status: action.meta.arg.action === "approve" ? "completed" : "rejected" } : item
+          item.withdrawal_id === action.payload.withdrawal_id ? action.payload : item
         );
+      })
+      .addCase(updateWithdrawalStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

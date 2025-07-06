@@ -1,5 +1,8 @@
 import pool from "../config/db.js";
 
+// Middleware to check if user is admin or superadmin
+const isAdmin = (req) => req.user?.role === "admin" || req.user?.role === "superadmin";
+
 export const createTrade = async (req, res) => {
   const {
     customer_id,
@@ -12,23 +15,29 @@ export const createTrade = async (req, res) => {
     created_by,
   } = req.body;
 
-  const isAdmin = created_by === "admin";
-  const status = isAdmin ? "approved" : "requested";
+  if (!customer_id || !instrument || !buy_price || !buy_quantity || !exit_price || !exit_quantity) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+
+  const isAdminUser = isAdmin(req);
+  const status = created_by === "admin" ? "approved" : "hold"; // Customer trades start as 'hold'
+
   const [lastTrade] = await pool.query(`
-  SELECT trade_number FROM trades
-  ORDER BY id DESC LIMIT 1
-`);
+    SELECT trade_number FROM trades
+    ORDER BY id DESC LIMIT 1
+  `);
 
   let trade_number = "T-1001";
   if (lastTrade.length > 0) {
-    const lastNumber = parseInt(
-      lastTrade[0].trade_number?.split("-")[1] || "1000",
-      10
-    );
+    const lastNumber = parseInt(lastTrade[0].trade_number?.split("-")[1] || "1000", 10);
     trade_number = `T-${lastNumber + 1}`;
   }
+
+  const connection = await pool.getConnection();
   try {
-    // 1. Calculate trade values
+    await connection.beginTransaction();
+
+    // Calculate trade values
     const buyValue = parseFloat(buy_price) * parseFloat(buy_quantity);
     const exitValue = parseFloat(exit_price) * parseFloat(exit_quantity);
     const rawProfitLossValue = exitValue - buyValue;
@@ -36,21 +45,16 @@ export const createTrade = async (req, res) => {
     const profitLossValue = Math.abs(netProfitLossValue).toFixed(2);
     const profitLoss = netProfitLossValue >= 0 ? "profit" : "loss";
 
-    // 2. Wallet validation for admin creating a loss
-    if (isAdmin && profitLoss === "loss") {
-      const [walletRows] = await pool.query(
-        `
-        SELECT balance FROM wallets
-        WHERE customer_id = ?
-        ORDER BY id DESC LIMIT 1
-      `,
+
+    // Wallet validation for loss trades
+    if (isAdminUser && profitLoss === "loss" && status === "approved") {
+      const [walletRows] = await connection.query(
+        `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE`,
         [customer_id]
       );
-
-      const currentBalance = walletRows.length
-        ? parseFloat(walletRows[0].balance)
-        : 0;
-    if (currentBalance < parseFloat(profitLossValue)){
+      const currentBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
+      if (currentBalance < parseFloat(profitLossValue)) {
+        await connection.rollback();
         return res.status(400).json({
           message: "Insufficient balance for loss trade",
           currentBalance,
@@ -59,14 +63,13 @@ export const createTrade = async (req, res) => {
       }
     }
 
-    // 3. Insert Trade
-    const [result] = await pool.query(
+    // Insert trade
+    const [result] = await connection.query(
       `INSERT INTO trades (
         customer_id, trade_number, instrument, buy_price, buy_quantity, buy_value,
-        exit_price, exit_quantity, exit_value,
-        profit_loss, profit_loss_value, brokerage,
-        status, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        exit_price, exit_quantity, exit_value, profit_loss, profit_loss_value,
+        brokerage, status, created_by, is_active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
       [
         customer_id,
         trade_number,
@@ -79,7 +82,7 @@ export const createTrade = async (req, res) => {
         exitValue,
         profitLoss,
         profitLossValue,
-        brokerage,
+        brokerage || 0,
         status,
         created_by,
       ]
@@ -87,161 +90,157 @@ export const createTrade = async (req, res) => {
 
     const tradeId = result.insertId;
 
-    // 4. Add wallet & transaction if approved
-    if (isAdmin && status === "approved") {
+    // Update wallet and transactions for approved trades
+    if (isAdminUser && status === "approved") {
       const txnType = profitLoss === "profit" ? "credit" : "debit";
       const txnDesc = `Trade ${txnType} for Trade No: ${trade_number}`;
 
-      const [txnResult] = await pool.query(
-        `
-        INSERT INTO transactions (customer_id, type, status, amount, description)
-        VALUES (?, ?, 'completed', ?, ?)
-      `,
+      const [txnResult] = await connection.query(
+        `INSERT INTO transactions (customer_id, type, status, amount, description)
+         VALUES (?, ?, 'completed', ?, ?)`,
         [customer_id, txnType, profitLossValue, txnDesc]
       );
 
       const transactionId = txnResult.insertId;
 
-      const [walletRows] = await pool.query(
-        `
-        SELECT balance FROM wallets
-        WHERE customer_id = ?
-        ORDER BY id DESC LIMIT 1
-      `,
+      const [walletRows] = await connection.query(
+        `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE`,
         [customer_id]
       );
 
-      const lastBalance = walletRows.length
-        ? parseFloat(walletRows[0].balance)
-        : 0;
+      const lastBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
       const newBalance =
         txnType === "credit"
           ? lastBalance + parseFloat(profitLossValue)
           : lastBalance - parseFloat(profitLossValue);
 
-      await pool.query(
-        `
-        INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
-        VALUES (?, ?, ?, ?, ?)
-      `,
+      await connection.query(
+        `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
+         VALUES (?, ?, ?, ?, ?)`,
         [customer_id, profitLossValue, txnType, newBalance, transactionId]
       );
     }
 
+    await connection.commit();
     res.status(201).json({
-      message: "Trade created successfully",
+      message: `Trade ${status === "hold" ? "held" : "created"} successfully`,
       id: tradeId,
       trade: {
         trade_number,
         buyValue,
         exitValue,
-        grossProfitLoss: rawProfitLossValue.toFixed(2),
-        brokerage: parseFloat(brokerage || 0).toFixed(2),
-        netProfitLossValue: profitLossValue,
         profitLoss,
+        profitLossValue,
         status,
       },
     });
   } catch (error) {
-  console.error("❌ Error in createTrade:", error.message);
-  res.status(500).json({ message: "Trade creation failed", error: error.message });
-}
-};
-
-export const getAllTrades = async (req, res) => {
-  try {
-    const [rows] = await pool.query(
-      "SELECT * FROM trades WHERE is_active = TRUE  ORDER BY id DESC"
-    );
-    res.json(rows);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to fetch trades" });
-  }
-};
-
-export const getMyTrades = async (req, res) => {
-  const customer_id =  req.user.id;
-  try {
-    const [rows] = await pool.query(
-      "SELECT * FROM trades WHERE customer_id = ?  ORDER BY id DESC",
-      customer_id
-    );
-    res.status(200).json({ message: "trades fetched", data: rows });
-    // res.json(rows);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to fetch trades" });
-  }
-};
-
-// ✅ GET Trade by ID
-export const getTradeById = async (req, res) => {
-  try {
-    const [rows] = await pool.query(
-      "SELECT * FROM trades WHERE id = ? AND is_active = TRUE",
-      [req.params.id]
-    );
-    if (!rows.length)
-      return res.status(404).json({ message: "Trade not found" });
-    res.json(rows[0]);
-  } catch (error) {
-    res.status(500).json({ message: "Error getting trade" });
+    await connection.rollback();
+    console.error("❌ Error in createTrade:", error.message);
+    res.status(500).json({ message: "Trade creation failed", error: error.message });
+  } finally {
+    connection.release();
   }
 };
 
 export const updateTrade = async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
+  const isAdminUser = isAdmin(req);
 
-  const isAdmin = req.user?.role === 'admin';
-  const userId = req.user?.id;
+  if (!isAdminUser) {
+    return res.status(403).json({ message: "Only admins can update trades" });
+  }
 
+  const connection = await pool.getConnection();
   try {
-    // 1. Fetch existing trade
-    const [oldTradeRows] = await pool.query(`SELECT * FROM trades WHERE id = ? AND is_active = TRUE`, [id]);
-    if (!oldTradeRows.length) return res.status(404).json({ message: "Trade not found" });
+    await connection.beginTransaction();
 
-    const oldTrade = oldTradeRows[0];
+    // Fetch existing trade
+    const [tradeRows] = await connection.query(
+      `SELECT * FROM trades WHERE id = ? AND is_active = TRUE FOR UPDATE`,
+      [id]
+    );
+    if (!tradeRows.length) {
+      await connection.rollback();
+      return res.status(404).json({ message: "Trade not found" });
+    }
 
-    // 2. Recalculate
+    const oldTrade = tradeRows[0];
+
+    // Reverse previous transaction if it exists
+    const [txnRows] = await connection.query(
+      `SELECT * FROM transactions WHERE customer_id = ? AND type IN ('credit', 'debit') AND is_reversed = FALSE`,
+      [oldTrade.customer_id]
+    );
+
+    let currentBalance = 0;
+    const [walletRows] = await connection.query(
+      `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE`,
+      [oldTrade.customer_id]
+    );
+    if (walletRows.length) {
+      currentBalance = parseFloat(walletRows[0].balance);
+    }
+
+    if (txnRows.length) {
+      const txn = txnRows[0];
+      const rollbackAmount = parseFloat(txn.amount);
+      const reverseType = txn.type === "credit" ? "debit" : "credit";
+
+      currentBalance =
+        reverseType === "credit"
+          ? currentBalance + rollbackAmount
+          : currentBalance - rollbackAmount;
+
+      await connection.query(
+        `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
+         VALUES (?, ?, ?, ?, ?)`,
+        [oldTrade.customer_id, rollbackAmount, reverseType, currentBalance, txn.id]
+      );
+
+      await connection.query(
+        `UPDATE transactions SET is_reversed = TRUE WHERE id = ?`,
+        [txn.id]
+      );
+    }
+
+    // Calculate new trade values
     const buy_price = parseFloat(updates.buy_price || oldTrade.buy_price);
     const buy_quantity = parseInt(updates.buy_quantity || oldTrade.buy_quantity);
     const exit_price = parseFloat(updates.exit_price || oldTrade.exit_price);
     const exit_quantity = parseInt(updates.exit_quantity || oldTrade.exit_quantity);
     const brokerage = parseFloat(updates.brokerage || oldTrade.brokerage || 0);
+    const status = updates.status || oldTrade.status;
 
     const buy_value = buy_price * buy_quantity;
     const exit_value = exit_price * exit_quantity;
     const netPnl = exit_value - buy_value - brokerage;
-    const profit_loss = netPnl >= 0 ? 'profit' : 'loss';
+    const profit_loss = netPnl >= 0 ? "profit" : "loss";
     const profit_loss_value = Math.abs(netPnl).toFixed(2);
 
-    // 3. Fetch wallet
-    const [walletRows] = await pool.query(
-      `SELECT * FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1`,
-      [oldTrade.customer_id]
-    );
-
-    let currentBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
-
-    if (isAdmin && updates.status === 'approved') {
-      if (profit_loss === 'loss' && currentBalance < parseFloat(profit_loss_value)) {
-        return res.status(400).json({ message: 'Insufficient balance for loss trade' });
+    // Validate balance for loss trades
+    if (status === "approved" && profit_loss === "loss") {
+      if (currentBalance < parseFloat(profit_loss_value)) {
+        await connection.rollback();
+        return res.status(400).json({
+          message: "Insufficient balance for loss trade",
+          currentBalance,
+          required: profit_loss_value,
+        });
       }
     }
 
-    // 4. Delete old trade (soft delete)
-    await pool.query(`UPDATE trades SET is_active = FALSE WHERE id = ?`, [id]);
-
-    // 5. Insert new trade with same ID
-    await pool.query(
-      `INSERT INTO trades (
-        id, customer_id, instrument, buy_price, buy_quantity, buy_value,
-        exit_price, exit_quantity, exit_value, brokerage, profit_loss,
-        profit_loss_value, status, created_by, updated_by, entry_date, exit_date, updated_at, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
+    // Update trade
+    await connection.query(
+      `UPDATE trades SET
+        customer_id = ?, instrument = ?, buy_price = ?, buy_quantity = ?,
+        buy_value = ?, exit_price = ?, exit_quantity = ?, exit_value = ?,
+        brokerage = ?, profit_loss = ?, profit_loss_value = ?, status = ?,
+        updated_at = NOW()
+      WHERE id = ?`,
       [
-        id,
-        oldTrade.customer_id,
+        updates.customer_id || oldTrade.customer_id,
         updates.instrument || oldTrade.instrument,
         buy_price,
         buy_quantity,
@@ -252,345 +251,390 @@ export const updateTrade = async (req, res) => {
         brokerage,
         profit_loss,
         profit_loss_value,
-        updates.status || oldTrade.status,
-        oldTrade.created_by,
-        userId,
-        oldTrade.entry_date,
-        updates.exit_price ? new Date() : oldTrade.exit_date,
-        new Date()
+        status,
+        id,
       ]
     );
 
-    // 6. Update wallet
-    if (updates.status === 'approved') {
-      let newBalance = profit_loss === 'profit'
-        ? currentBalance + parseFloat(profit_loss_value)
-        : currentBalance - parseFloat(profit_loss_value);
+    // Update wallet and transactions for approved trades
+    if (status === "approved") {
+      const txnType = profit_loss === "profit" ? "credit" : "debit";
+      const newDesc = `Trade ${txnType} for Trade No: ${oldTrade.trade_number}`;
 
-      await pool.query(
-        `INSERT INTO wallets (customer_id, trade_id, balance, amount, type, created_by, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          oldTrade.customer_id,
-          id,
-          newBalance,
-          profit_loss_value,
-          profit_loss,
-          userId,
-          new Date()
-        ]
+      const [txnResult] = await connection.query(
+        `INSERT INTO transactions (customer_id, type, status, amount, description)
+         VALUES (?, ?, 'completed', ?, ?)`,
+        [oldTrade.customer_id, txnType, profit_loss_value, newDesc]
+      );
+
+      const newBalance =
+        txnType === "credit"
+          ? currentBalance + parseFloat(profit_loss_value)
+          : currentBalance - parseFloat(profit_loss_value);
+
+      await connection.query(
+        `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
+         VALUES (?, ?, ?, ?, ?)`,
+        [oldTrade.customer_id, profit_loss_value, txnType, newBalance, txnResult.insertId]
       );
     }
 
-    return res.status(200).json({ message: 'Trade updated successfully with new record' });
+    await connection.commit();
+    res.status(200).json({ message: "Trade updated successfully" });
   } catch (error) {
-    console.error("❌ updateTrade error:", error.message);
-    res.status(500).json({ message: 'Failed to update and replace trade' });
+    await connection.rollback();
+    console.error("❌ Error in updateTrade:", error.message);
+    res.status(500).json({ message: "Failed to update trade" });
+  } finally {
+    connection.release();
   }
 };
 
-
-// export const updateTrade = async (req, res) => {
-//   const { id } = req.params;
-//   const updates = req.body;
-
-//   try {
-//     // 1. Fetch the original trade
-//     const [tradeRows] = await pool.query(
-//       `SELECT * FROM trades WHERE id = ? AND is_active = TRUE`,
-//       [id]
-//     );
-
-//     if (!tradeRows.length) {
-//       return res.status(404).json({ message: "Trade not found" });
-//     }
-
-//     const oldTrade = tradeRows[0];
-
-//     // Assume `created_by` is controlled from backend (e.g., session)
-//     const isAdmin = true; // 🔐 Hardcoded for now — use real user auth
-//     const isApproved = updates.status === "approved";
-
-//     // 2. Reverse old transaction (if any)
-//     const oldTxnDesc = `Trade ${
-//       oldTrade.profit_loss === "profit" ? "credit" : "debit"
-//     } for Trade No: ${oldTrade.trade_number}`;
-
-//     const [txnRows] = await pool.query(
-//       `SELECT * FROM transactions WHERE description = ? AND customer_id = ? AND is_reversed = FALSE`,
-//       [oldTxnDesc, oldTrade.customer_id]
-//     );
-
-//     let currentBalance = 0;
-//     const [walletRows] = await pool.query(
-//       `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1`,
-//       [oldTrade.customer_id]
-//     );
-//     if (walletRows.length) {
-//       currentBalance = parseFloat(walletRows[0].balance);
-//     }
-
-//     if (txnRows.length) {
-//       const txn = txnRows[0];
-//       const rollbackAmount = parseFloat(txn.amount);
-
-//       currentBalance =
-//         txn.type === "credit"
-//           ? currentBalance - rollbackAmount
-//           : currentBalance + rollbackAmount;
-
-//       await pool.query(`DELETE FROM wallets WHERE transaction_id = ?`, [txn.id]);
-//       await pool.query(`DELETE FROM transactions WHERE id = ?`, [txn.id]);
-//     }
-
-//     // 3. Recalculate trade values
-//     const buyValue = parseFloat(updates.buy_price) * parseFloat(updates.buy_quantity);
-//     const exitValue = parseFloat(updates.exit_price) * parseFloat(updates.exit_quantity);
-//     const brokerage = parseFloat(updates.brokerage || 0);
-//     const netPnl = exitValue - buyValue - brokerage;
-//     const profitLossValue = Math.abs(netPnl).toFixed(2);
-//     const profitLoss = netPnl >= 0 ? "profit" : "loss";
-
-//     // Update calculated fields
-//     const {
-//       customer_id,
-//       instrument,
-//       buy_price,
-//       buy_quantity,
-//       exit_price,
-//       exit_quantity,
-//       status,
-//     } = updates;
-
-//     const updateFields = {
-//       customer_id,
-//       instrument,
-//       buy_price,
-//       buy_quantity,
-//       buy_value,
-//       exit_price,
-//       exit_quantity,
-//       exit_value,
-//       brokerage,
-//       profit_loss: profitLoss,
-//       profit_loss_value: profitLossValue,
-//       status,
-//       updated_at: new Date(),
-//     };
-
-//     // 4. Admin balance check if trade is a loss
-//     if (isAdmin && isApproved && profitLoss === "loss") {
-//       if (currentBalance < parseFloat(profitLossValue)) {
-//         return res.status(400).json({
-//           message: "Insufficient balance for loss trade",
-//           currentBalance,
-//           required: profitLossValue,
-//         });
-//       }
-//     }
-
-//     // 5. Update the trade securely (avoid SET ?)
-//     await pool.query(
-//       `UPDATE trades SET
-//         customer_id = ?, instrument = ?, buy_price = ?, buy_quantity = ?,
-//         buy_value = ?, exit_price = ?, exit_quantity = ?, exit_value = ?,
-//         brokerage = ?, profit_loss = ?, profit_loss_value = ?, status = ?, updated_at = ?
-//       WHERE id = ?`,
-//       [
-//         updateFields.customer_id,
-//         updateFields.instrument,
-//         updateFields.buy_price,
-//         updateFields.buy_quantity,
-//         updateFields.buy_value,
-//         updateFields.exit_price,
-//         updateFields.exit_quantity,
-//         updateFields.exit_value,
-//         updateFields.brokerage,
-//         updateFields.profit_loss,
-//         updateFields.profit_loss_value,
-//         updateFields.status,
-//         updateFields.updated_at,
-//         id,
-//       ]
-//     );
-
-//     // 6. Create transaction and wallet if admin and approved
-//     if (isAdmin && isApproved) {
-//       const txnType = profitLoss === "profit" ? "credit" : "debit";
-//       const newDesc = `Trade ${txnType} for Trade No: ${oldTrade.trade_number}`;
-
-//       const [txnResult] = await pool.query(
-//         `INSERT INTO transactions (customer_id, type, status, amount, description)
-//          VALUES (?, ?, 'completed', ?, ?)`,
-//         [oldTrade.customer_id, txnType, profitLossValue, newDesc]
-//       );
-
-//       const txnId = txnResult.insertId;
-
-//       const newBalance =
-//         txnType === "credit"
-//           ? currentBalance + parseFloat(profitLossValue)
-//           : currentBalance - parseFloat(profitLossValue);
-
-//       await pool.query(
-//         `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
-//          VALUES (?, ?, ?, ?, ?)`,
-//         [oldTrade.customer_id, profitLossValue, txnType, newBalance, txnId]
-//       );
-//     }
-
-//     res.status(200).json({ message: "Trade updated successfully" });
-//   } catch (error) {
-//     console.error("❌ Error in updateTrade:", error.message);
-//     res.status(500).json({ message: "Failed to update trade" });
-//   }
-// };
-
-
-// ✅ DELETE Trade (with wallet & txn rollback if admin)
 export const deleteTrade = async (req, res) => {
   const { id } = req.params;
+  const isAdminUser = isAdmin(req);
 
+  if (!isAdminUser) {
+    return res.status(403).json({ message: "Only admins can delete trades" });
+  }
+
+  const connection = await pool.getConnection();
   try {
-    // Step 1: Fetch trade
-    const [tradeRows] = await pool.query(
-      `SELECT * FROM trades WHERE id = ? AND is_active = TRUE`,
+    await connection.beginTransaction();
+
+    const [tradeRows] = await connection.query(
+      `SELECT * FROM trades WHERE id = ? AND is_active = TRUE FOR UPDATE`,
       [id]
     );
-    if (tradeRows.length === 0)
-      return res
-        .status(404)
-        .json({ message: "Trade not found or already inactive" });
+    if (!tradeRows.length) {
+      await connection.rollback();
+      return res.status(404).json({ message: "Trade not found" });
+    }
 
     const trade = tradeRows[0];
-    const isAdmin = trade.created_by === "admin";
     const isApproved = trade.status === "approved";
-    const txnType = trade.profit_loss === "profit" ? "credit" : "debit";
-    const reverseType = txnType === "credit" ? "debit" : "credit";
 
-    // Step 2: Reverse wallet only if admin + approved
-    if (isAdmin && isApproved) {
-      const txnDesc = `Trade ${txnType} for Trade No: ${trade.trade_number}`;
-      const [txnRows] = await pool.query(
-        `SELECT * FROM transactions WHERE description = ? AND customer_id = ? AND is_reversed = FALSE`,
-        [txnDesc, trade.customer_id]
+    if (isApproved) {
+      const [txnRows] = await connection.query(
+        `SELECT * FROM transactions WHERE customer_id = ? AND type IN ('credit', 'debit') AND is_reversed = FALSE`,
+        [trade.customer_id]
       );
 
       if (txnRows.length) {
         const txn = txnRows[0];
+        const rollbackAmount = parseFloat(txn.amount);
+        const reverseType = txn.type === "credit" ? "debit" : "credit";
 
-        const [walletRows] = await pool.query(
-          `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1`,
+        const [walletRows] = await connection.query(
+          `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE`,
           [trade.customer_id]
         );
-        const lastBalance = walletRows.length
-          ? parseFloat(walletRows[0].balance)
-          : 0;
-        const profitLossValue = parseFloat(trade.profit_loss_value);
+        const lastBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
 
         const newBalance =
           reverseType === "credit"
-            ? lastBalance + profitLossValue
-            : lastBalance - profitLossValue;
+            ? lastBalance + rollbackAmount
+            : lastBalance - rollbackAmount;
 
-        // Insert reversal wallet entry
-        await pool.query(
+        await connection.query(
           `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
            VALUES (?, ?, ?, ?, ?)`,
-          [trade.customer_id, profitLossValue, reverseType, newBalance, txn.id]
+          [trade.customer_id, rollbackAmount, reverseType, newBalance, txn.id]
         );
 
-        // Mark original transaction as reversed
-        await pool.query(
+        await connection.query(
           `UPDATE transactions SET is_reversed = TRUE WHERE id = ?`,
           [txn.id]
         );
       }
     }
 
-    // Step 3: Soft-delete the trade
-    await pool.query(`UPDATE trades SET is_active = FALSE WHERE id = ?`, [id]);
-
-    res.json({ message: "Trade deleted and wallet adjusted (if applicable)." });
+    await connection.query(`UPDATE trades SET is_active = FALSE WHERE id = ?`, [id]);
+    await connection.commit();
+    res.json({ message: "Trade deleted and wallet adjusted" });
   } catch (error) {
-    console.error("Error in deleteTrade:", error);
+    await connection.rollback();
+    console.error("❌ Error in deleteTrade:", error);
     res.status(500).json({ message: "Failed to delete trade" });
+  } finally {
+    connection.release();
+  }
+};
+
+export const deactivateTrade = async (req, res) => {
+  const { id } = req.params;
+  const isAdminUser = isAdmin(req);
+
+  if (!isAdminUser) {
+    return res.status(403).json({ message: "Only admins can deactivate trades" });
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [tradeRows] = await connection.query(
+      `SELECT * FROM trades WHERE id = ? AND is_active = TRUE FOR UPDATE`,
+      [id]
+    );
+    if (!tradeRows.length) {
+      await connection.rollback();
+      return res.status(404).json({ message: "Trade not found" });
+    }
+
+    const trade = tradeRows[0];
+    const isApproved = trade.status === "approved";
+
+    if (isApproved) {
+      const [txnRows] = await connection.query(
+        `SELECT * FROM transactions WHERE customer_id = ? AND type IN ('credit', 'debit') AND is_reversed = FALSE`,
+        [trade.customer_id]
+      );
+
+      if (txnRows.length) {
+        const txn = txnRows[0];
+        const rollbackAmount = parseFloat(txn.amount);
+        const reverseType = txn.type === "credit" ? "debit" : "credit";
+
+        const [walletRows] = await connection.query(
+          `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE`,
+          [trade.customer_id]
+        );
+        const lastBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
+
+        const newBalance =
+          reverseType === "credit"
+            ? lastBalance + rollbackAmount
+            : lastBalance - rollbackAmount;
+
+        await connection.query(
+          `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
+           VALUES (?, ?, ?, ?, ?)`,
+          [trade.customer_id, rollbackAmount, reverseType, newBalance, txn.id]
+        );
+
+        await connection.query(
+          `UPDATE transactions SET is_reversed = TRUE WHERE id = ?`,
+          [txn.id]
+        );
+      }
+    }
+
+    await connection.query(
+      `UPDATE trades SET status = 'deactivated', updated_at = NOW() WHERE id = ?`,
+      [id]
+    );
+    await connection.commit();
+    res.json({ message: "Trade deactivated and wallet adjusted" });
+  } catch (error) {
+    await connection.rollback();
+    console.error("❌ Error in deactivateTrade:", error);
+    res.status(500).json({ message: "Failed to deactivate trade" });
+  } finally {
+    connection.release();
+  }
+};
+
+export const getAllTransactions = async (req, res) => {
+  if (!isAdmin(req)) {
+    return res.status(403).json({ message: "Only admins can view all transactions" });
+  }
+
+  try {
+    const [rows] = await pool.query(`
+      SELECT t.id, t.customer_id, c.full_name AS customer_name, t.type, t.status, t.amount, t.description, t.created_at
+      FROM transactions t
+      JOIN customers c ON c.id = t.customer_id
+      ORDER BY t.created_at DESC
+    `);
+    res.status(200).json({ transactions: rows });
+  } catch (err) {
+    res.status(500).json({ message: "Error loading transactions", error: err.message });
+  }
+};
+
+export const getMyTransactions = async (req, res) => {
+  const customerId = req.user.id;
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT t.id, t.type, t.amount, t.description, t.created_at
+       FROM transactions t
+       WHERE t.customer_id = ? AND t.status = 'completed'
+       ORDER BY t.created_at DESC`,
+      [customerId]
+    );
+    res.status(200).json({ transactions: rows });
+  } catch (err) {
+    res.status(500).json({ message: "Error loading transactions", error: err.message });
+  }
+};
+
+export const getAllTrades = async (req, res) => {
+  if (!isAdmin(req)) {
+    return res.status(403).json({ message: "Only admins can view all trades" });
+  }
+
+  try {
+    const [rows] = await pool.query(`
+      SELECT t.id, t.customer_id, c.full_name AS customer_name, t.trade_number, t.instrument,
+             t.buy_price, t.buy_quantity, t.buy_value, t.exit_price, t.exit_quantity, t.exit_value,
+             t.profit_loss, t.profit_loss_value, t.brokerage, t.status, t.created_by, t.is_active,
+             t.created_at, t.updated_at
+      FROM trades t
+      JOIN customers c ON c.id = t.customer_id
+      WHERE t.is_active = TRUE
+      ORDER BY t.created_at DESC
+    `);
+    res.status(200).json({ trades: rows });
+  } catch (err) {
+    console.error("❌ Error in getAllTrades:", err.message);
+    res.status(500).json({ message: "Error loading trades", error: err.message });
+  }
+};
+
+export const getMyTrades = async (req, res) => {
+  const customerId = req.user.id;
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT t.id, t.trade_number, t.instrument, t.buy_price, t.buy_quantity, t.buy_value,
+              t.exit_price, t.exit_quantity, t.exit_value, t.profit_loss, t.profit_loss_value,
+              t.brokerage, t.status, t.created_at
+       FROM trades t
+       WHERE t.customer_id = ? AND t.is_active = TRUE
+       ORDER BY t.created_at DESC`,
+      [customerId]
+    );
+    res.status(200).json({ trades: rows });
+  } catch (err) {
+    console.error("❌ Error in getMyTrades:", err.message);
+    res.status(500).json({ message: "Error loading trades", error: err.message });
+  }
+};
+
+export const getTradeById = async (req, res) => {
+  const { id } = req.params;
+  const isAdminUser = isAdmin(req);
+
+  if (!isAdminUser) {
+    return res.status(403).json({ message: "Only admins can view trade details" });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT t.id, t.customer_id, c.full_name AS customer_name, t.trade_number, t.instrument,
+              t.buy_price, t.buy_quantity, t.buy_value, t.exit_price, t.exit_quantity, t.exit_value,
+              t.profit_loss, t.profit_loss_value, t.brokerage, t.status, t.created_by, t.is_active,
+              t.created_at, t.updated_at
+       FROM trades t
+       JOIN customers c ON c.id = t.customer_id
+       WHERE t.id = ? AND t.is_active = TRUE`,
+      [id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ message: "Trade not found" });
+    }
+
+    res.status(200).json({ trade: rows[0] });
+  } catch (err) {
+    console.error("❌ Error in getTradeById:", err.message);
+    res.status(500).json({ message: "Error loading trade", error: err.message });
   }
 };
 
 export const approveTrade = async (req, res) => {
   const { id } = req.params;
+  const isAdminUser = isAdmin(req);
 
+  if (!isAdminUser) {
+    return res.status(403).json({ message: "Only admins can approve trades" });
+  }
+
+  const connection = await pool.getConnection();
   try {
-    // 1. Get the trade
-    const [trades] = await pool.query(
-      "SELECT * FROM trades WHERE id = ? AND is_active = TRUE",
+    await connection.beginTransaction();
+
+    // Fetch trade
+    const [tradeRows] = await connection.query(
+      `SELECT * FROM trades WHERE id = ? AND is_active = TRUE AND status = 'hold' FOR UPDATE`,
       [id]
     );
-    if (!trades.length)
-      return res.status(404).json({ message: "Trade not found" });
-
-    const trade = trades[0];
-    if (trade.status === "approved") {
-      return res.status(400).json({ message: "Trade already approved" });
+    if (!tradeRows.length) {
+      await connection.rollback();
+      return res.status(404).json({ message: "Trade not found or not in hold status" });
     }
 
-    const txnType = trade.profit_loss === "profit" ? "credit" : "debit";
-    const description = `Trade ${txnType} for Trade No: ${trade.trade_number}`;
+    const trade = tradeRows[0];
 
-    // 2. Insert into transactions
-    const [txnResult] = await pool.query(
-      `
-      INSERT INTO transactions (customer_id, type, status, amount, description)
-      VALUES (?, ?, 'completed', ?, ?)
-    `,
-      [trade.customer_id, txnType, trade.profit_loss_value, description]
+    // Calculate trade values (for validation)
+    const buyValue = parseFloat(trade.buy_price) * parseFloat(trade.buy_quantity);
+    const exitValue = parseFloat(trade.exit_price) * parseFloat(trade.exit_quantity);
+    const rawProfitLossValue = exitValue - buyValue;
+    const netProfitLossValue = rawProfitLossValue - parseFloat(trade.brokerage || 0);
+    const profitLossValue = Math.abs(netProfitLossValue).toFixed(2);
+    const profitLoss = netProfitLossValue >= 0 ? "profit" : "loss";
+
+    // Wallet validation for loss trades
+    if (profitLoss === "loss") {
+      const [walletRows] = await connection.query(
+        `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE`,
+        [trade.customer_id]
+      );
+      const currentBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
+      if (currentBalance < parseFloat(profitLossValue)) {
+        await connection.rollback();
+        return res.status(400).json({
+          message: "Insufficient balance for loss trade",
+          currentBalance,
+          required: profitLossValue,
+        });
+      }
+    }
+
+    // Update trade status to approved
+    await connection.query(
+      `UPDATE trades SET status = 'approved', updated_at = NOW() WHERE id = ?`,
+      [id]
+    );
+
+    // Create transaction and update wallet
+    const txnType = profitLoss === "profit" ? "credit" : "debit";
+    const txnDesc = `Trade ${txnType} for Trade No: ${trade.trade_number}`;
+
+    const [txnResult] = await connection.query(
+      `INSERT INTO transactions (customer_id, type, status, amount, description)
+       VALUES (?, ?, 'completed', ?, ?)`,
+      [trade.customer_id, txnType, profitLossValue, txnDesc]
     );
 
     const transactionId = txnResult.insertId;
 
-    // 3. Get last balance
-    const [walletRows] = await pool.query(
-      `
-      SELECT balance FROM wallets
-      WHERE customer_id = ?
-      ORDER BY id DESC LIMIT 1
-    `,
+    const [walletRows] = await connection.query(
+      `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE`,
       [trade.customer_id]
     );
 
-    const lastBalance = walletRows.length ? walletRows[0].balance : 0;
+    const lastBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
     const newBalance =
       txnType === "credit"
-        ? parseFloat(lastBalance) + parseFloat(trade.profit_loss_value)
-        : parseFloat(lastBalance) - parseFloat(trade.profit_loss_value);
+        ? lastBalance + parseFloat(profitLossValue)
+        : lastBalance - parseFloat(profitLossValue);
 
-    // 4. Insert into wallet
-    await pool.query(
-      `
-      INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
-      VALUES (?, ?, ?, ?, ?)
-    `,
-      [
-        trade.customer_id,
-        trade.profit_loss_value,
-        txnType,
-        newBalance,
-        transactionId,
-      ]
+    await connection.query(
+      `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
+       VALUES (?, ?, ?, ?, ?)`,
+      [trade.customer_id, profitLossValue, txnType, newBalance, transactionId]
     );
 
-    // 5. Update trade status
-    await pool.query("UPDATE trades SET status = 'approved' WHERE id = ?", [
-      id,
-    ]);
-
-    res.json({
-      message: "Trade approved, wallet updated",
-      balance: newBalance,
-    });
+    await connection.commit();
+    res.status(200).json({ message: "Trade approved successfully" });
   } catch (error) {
-    console.error("Trade approval error:", error);
-    res.status(500).json({ message: "Approval failed" });
+    await connection.rollback();
+    console.error("❌ Error in approveTrade:", error.message);
+    res.status(500).json({ message: "Failed to approve trade", error: error.message });
+  } finally {
+    connection.release();
   }
 };

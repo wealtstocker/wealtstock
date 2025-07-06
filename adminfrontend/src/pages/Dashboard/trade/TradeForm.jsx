@@ -8,33 +8,31 @@ import {
 } from '../../../redux/Slices/tradeSlice';
 import { fetchAllCustomers } from '../../../redux/Slices/customerSlice';
 import {
-  FiUser,
-  FiDollarSign,
-  FiHash,
-  FiList,
-  FiPercent,
-} from 'react-icons/fi';
-import { Button, Spin, Select } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
-import { fetchAllBalances } from '../../../redux/Slices/balanceSlice';
+  fetchAllBalances,
+  clearError,
+} from '../../../redux/Slices/walletSlice';
+import { Button, Spin, Select, InputNumber, Input, Alert, Tooltip } from 'antd';
+import { ArrowLeftOutlined, DollarOutlined, StockOutlined, NumberOutlined, PercentageOutlined } from '@ant-design/icons';
+import Toast from '../../../services/toast';
 
-const TradeForm = () => {
+const TradeForm = ({ isCustomer = false }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
-  const { balances, loading: balanceLoading } = useSelector((state) => state.balance);
-  const { single: trade, loading } = useSelector((state) => state.trade);
-  const { all: customers } = useSelector((state) => state.customer);
+  const { balances, loading: balanceLoading, error: walletError } = useSelector((state) => state.wallet);
+  const { single: trade, loading: tradeLoading } = useSelector((state) => state.trade);
+  const { all: customers, loading: customerLoading } = useSelector((state) => state.customer);
+  const user = useSelector((state) => state.auth.user);
 
   const [formData, setFormData] = useState({
-    customer_id: '',
+    customer_id: isCustomer ? user?.id : '',
     instrument: '',
     buy_price: '',
     buy_quantity: '',
     exit_price: '',
     exit_quantity: '',
-    brokerage: '',
+    brokerage: isCustomer ? 0 : '',
   });
 
   useEffect(() => {
@@ -42,10 +40,6 @@ const TradeForm = () => {
     dispatch(fetchAllBalances());
     if (isEdit) dispatch(fetchSingleTrade(id));
   }, [dispatch, id, isEdit]);
-  const getSelectedCustomerBalance = () => {
-    const balanceObj = balances.find((bal) => bal.customer_id === formData.customer_id);
-    return balanceObj ? parseFloat(balanceObj.balance).toFixed(2) : '0.00';
-  };
 
   useEffect(() => {
     if (isEdit && trade) {
@@ -61,62 +55,74 @@ const TradeForm = () => {
     }
   }, [trade, isEdit]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const handleChange = (name, value) => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
-  const handleCustomerChange = (value) => {
-    setFormData((prev) => ({
-      ...prev,
-      customer_id: value,
-    }));
+  const getSelectedCustomerBalance = () => {
+    const balanceObj = balances.find((bal) => bal.customer_id === formData.customer_id);
+    return balanceObj ? parseFloat(balanceObj.balance).toFixed(2) : '0.00';
+  };
+
+  const validateTrade = () => {
+    const { customer_id, instrument, buy_price, buy_quantity, exit_price, exit_quantity, brokerage } = formData;
+    if (!customer_id || !instrument || !buy_price || !buy_quantity || !exit_price || !exit_quantity) {
+      Toast.error('All required fields must be filled');
+      return false;
+    }
+    if (parseFloat(buy_price) <= 0 || parseFloat(buy_quantity) <= 0 || parseFloat(exit_price) <= 0 || parseFloat(exit_quantity) <= 0) {
+      Toast.error('Price and quantity must be positive numbers');
+      return false;
+    }
+    if (parseFloat(exit_quantity) > parseFloat(buy_quantity)) {
+      Toast.error('Exit quantity cannot exceed buy quantity');
+      return false;
+    }
+    if (!isCustomer && parseFloat(brokerage) < 0) {
+      Toast.error('Brokerage cannot be negative');
+      return false;
+    }
+    const buyValue = parseFloat(buy_price) * parseFloat(buy_quantity);
+    const balance = parseFloat(getSelectedCustomerBalance());
+    if (!isEdit && buyValue + parseFloat(brokerage || 0) > balance) {
+      Toast.error('Insufficient balance for this trade');
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('formData,', formData)
-    const buyQ = parseFloat(formData.buy_quantity || 0);
-    const exitQ = parseFloat(formData.exit_quantity || 0);
-
-    if (exitQ > buyQ) {
-      return alert("❌ Exit quantity cannot be greater than buy quantity");
-    }
+    if (!validateTrade()) return;
     try {
       const action = isEdit
         ? updateTrade({ id, data: formData })
-        : createTrade({ ...formData, created_by: 'admin' });
-
+        : createTrade({ ...formData, created_by: isCustomer ? 'customer' : 'admin' });
       await dispatch(action).unwrap();
-      navigate('/admin/trades');
+      await dispatch(fetchAllBalances());
+      navigate(isCustomer ? '/customer/trades' : '/admin/trades');
+      Toast.success(isEdit ? 'Trade updated successfully' : 'Trade created successfully');
     } catch (err) {
-      console.error('❌ Trade submission failed', err);
+      Toast.error('Trade submission failed');
     }
   };
 
   const profitLoss = useMemo(() => {
-    const {
-      buy_price,
-      buy_quantity,
-      exit_price,
-      exit_quantity,
-      brokerage,
-    } = formData;
-
+    const { buy_price, buy_quantity, exit_price, exit_quantity, brokerage } = formData;
     const bp = parseFloat(buy_price || 0);
     const bq = parseFloat(buy_quantity || 0);
     const ep = parseFloat(exit_price || 0);
     const eq = parseFloat(exit_quantity || 0);
     const br = parseFloat(brokerage || 0);
 
+    if (!bp || !bq || !ep || !eq) return null;
+
     const buyValue = bp * bq;
     const sellValue = ep * eq;
     const pl = sellValue - buyValue - br;
-
-    if (!bp || !bq || !ep || !eq) return null;
 
     return {
       value: pl.toFixed(2),
@@ -124,24 +130,23 @@ const TradeForm = () => {
     };
   }, [formData]);
 
-  if (isEdit && loading) {
+  if (tradeLoading || customerLoading || balanceLoading) {
     return (
-      <div className="flex justify-center items-center h-60">
+      <div className="flex justify-center items-center min-h-[200px]">
         <Spin size="large" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
+    <div className="p-4 md:p-6 lg:p-8 max-w-5xl mx-auto">
+      <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div className="flex items-center gap-3">
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
             Back
           </Button>
-          <h2 className="text-xl sm:text-2xl font-bold text-indigo-700">
-            {isEdit ? '✏️ Edit Trade' : '📝 Create Trade'}
+          <h2 className="text-2xl md:text-3xl font-bold text-indigo-700">
+            {isEdit ? '✏️ Edit Trade' : isCustomer ? '📝 Hold Trade' : '📝 Create Trade'}
           </h2>
         </div>
         {isEdit && trade?.trade_number && (
@@ -150,174 +155,168 @@ const TradeForm = () => {
           </div>
         )}
       </div>
+
+      {walletError && (
+        <Alert
+          message="Error"
+          description={walletError}
+          type="error"
+          showIcon
+          closable
+          className="mb-6"
+          onClose={() => dispatch(clearError())}
+        />
+      )}
+
       {formData.customer_id && (
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-300 rounded-md shadow-sm">
-          <p className="text-sm text-gray-700 font-semibold">
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg shadow-sm">
+          <p className="text-sm font-semibold text-gray-700">
             💰 Balance for {customers.find((c) => c.id === formData.customer_id)?.full_name || formData.customer_id}:{' '}
-            <span className="text-blue-700">₹ {getSelectedCustomerBalance()}</span>
+            <span className="text-blue-700 font-bold">₹{getSelectedCustomerBalance()}</span>
           </p>
         </div>
       )}
 
-      {/* Form */}
       <form
         onSubmit={handleSubmit}
         className="bg-white p-6 rounded-xl shadow-md grid grid-cols-1 sm:grid-cols-2 gap-6"
       >
-        {/* Customer */}
         <div>
-          <label className="block text-sm font-semibold mb-1">
-            <FiUser className="inline mr-1" /> Customer
+          <label className="block text-sm font-semibold mb-1 text-gray-700">
+            <StockOutlined className="mr-1" /> Customer
           </label>
           <Select
             showSearch
             optionFilterProp="children"
             value={formData.customer_id || undefined}
-            onChange={handleCustomerChange}
+            onChange={(value) => handleChange('customer_id', value)}
             placeholder="Select customer"
             className="w-full"
+            disabled={isCustomer || isEdit}
+            loading={customerLoading}
             filterOption={(input, option) =>
-              option?.children
-                ?.toLowerCase()
-                .includes(input.toLowerCase())
+              option?.children?.toLowerCase().includes(input.toLowerCase())
             }
           >
             {customers.map((c) => (
               <Select.Option key={c.id} value={c.id}>
-                {c.full_name} ({c.id})
+                {c.full_name} (ID: {c.id})
               </Select.Option>
             ))}
           </Select>
         </div>
 
-        {/* Instrument */}
         <div>
-          <label className="block text-sm font-semibold mb-1">
-            <FiList className="inline mr-1" /> Stock Name
+          <label className="block text-sm font-semibold mb-1 text-gray-700">
+            <StockOutlined className="mr-1" /> Stock Name
           </label>
-          <input
-            type="text"
-            name="instrument"
+          <Input
             value={formData.instrument}
-            onChange={handleChange}
+            onChange={(e) => handleChange('instrument', e.target.value)}
             required
-            className="w-full px-3 py-2 border rounded-lg"
             placeholder="e.g. TATASTEEL"
+            className="w-full"
           />
         </div>
 
-        {/* Buy Price */}
         <div>
-          <label className="block text-sm font-semibold mb-1">
-            <FiDollarSign className="inline mr-1" /> Buy Price
+          <label className="block text-sm font-semibold mb-1 text-gray-700">
+            <DollarOutlined className="mr-1" /> Buy Price
           </label>
-          <input
-            type="number"
-            name="buy_price"
+          <InputNumber
+            min={0}
             value={formData.buy_price}
-            onChange={handleChange}
+            onChange={(value) => handleChange('buy_price', value)}
             required
-            className="w-full px-3 py-2 border rounded-lg"
+            className="w-full"
             placeholder="e.g. 350"
           />
         </div>
 
-        {/* Buy Quantity */}
         <div>
-          <label className="block text-sm font-semibold mb-1">
-            <FiHash className="inline mr-1" /> Buy Quantity
+          <label className="block text-sm font-semibold mb-1 text-gray-700">
+            <NumberOutlined className="mr-1" /> Buy Quantity
           </label>
-          <input
-            type="number"
-            name="buy_quantity"
+          <InputNumber
+            min={0}
             value={formData.buy_quantity}
-            onChange={handleChange}
+            onChange={(value) => handleChange('buy_quantity', value)}
             required
-            className="w-full px-3 py-2 border rounded-lg"
+            className="w-full"
             placeholder="e.g. 10"
           />
         </div>
 
-        {/* Exit Price */}
         <div>
-          <label className="block text-sm font-semibold mb-1">
-            <FiDollarSign className="inline mr-1" /> Exit Price
+          <label className="block text-sm font-semibold mb-1 text-gray-700">
+            <DollarOutlined className="mr-1" /> Exit Price
           </label>
-          <input
-            type="number"
-            name="exit_price"
+          <InputNumber
+            min={0}
             value={formData.exit_price}
-            onChange={handleChange}
+            onChange={(value) => handleChange('exit_price', value)}
             required
-            className="w-full px-3 py-2 border rounded-lg"
+            className="w-full"
             placeholder="e.g. 370"
           />
         </div>
 
-        {/* Exit Quantity */}
         <div>
-          <label className="block text-sm font-semibold mb-1">
-            <FiHash className="inline mr-1" /> Exit Quantity
+          <label className="block text-sm font-semibold mb-1 text-gray-700">
+            <NumberOutlined className="mr-1" /> Exit Quantity
           </label>
-          <input
-            type="number"
-            name="exit_quantity"
+          <InputNumber
+            min={0}
+            max={formData.buy_quantity}
             value={formData.exit_quantity}
-            onChange={handleChange}
+            onChange={(value) => handleChange('exit_quantity', value)}
             required
-            className="w-full px-3 py-2 border rounded-lg"
+            className="w-full"
             placeholder="e.g. 10"
           />
         </div>
 
-        {/* Brokerage */}
-        <div className="sm:col-span-2">
-          <label className="block text-sm font-semibold mb-1">
-            <FiPercent className="inline mr-1" /> Brokerage
-          </label>
-          <input
-            type="number"
-            name="brokerage"
-            value={formData.brokerage}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border rounded-lg"
-            placeholder="e.g. 5.00"
-          />
-        </div>
+        {!isCustomer && (
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-semibold mb-1 text-gray-700">
+              <PercentageOutlined className="mr-1" /> Brokerage
+            </label>
+            <InputNumber
+              min={0}
+              value={formData.brokerage}
+              onChange={(value) => handleChange('brokerage', value)}
+              required
+              className="w-full"
+              placeholder="e.g. 5.00"
+            />
+          </div>
+        )}
 
-        {/* P/L Display */}
         {profitLoss && (
           <div className="sm:col-span-2 text-center text-lg font-semibold mt-4">
             {profitLoss.type === 'profit' && (
-              <span className="text-green-600">
-                ✅ Profit: ₹{profitLoss.value}
-              </span>
+              <span className="text-green-600">✅ Profit: ₹{profitLoss.value}</span>
             )}
             {profitLoss.type === 'loss' && (
-              <span className="text-red-600">
-                ❌ Loss: ₹{profitLoss.value}
-              </span>
+              <span className="text-red-600">❌ Loss: ₹{profitLoss.value}</span>
             )}
             {profitLoss.type === 'neutral' && (
-              <span className="text-gray-500">No Gain or Loss</span>
+              <span className="text-gray-500">⚖️ No Gain or Loss</span>
             )}
           </div>
         )}
 
-        {/* Submit */}
         <div className="sm:col-span-2 text-center mt-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition"
-          >
-            {loading
-              ? 'Processing...'
-              : isEdit
-                ? 'Update Trade'
-                : 'Create Trade'}
-          </button>
+          <Tooltip title={isEdit ? 'Update this trade' : 'Create a new trade'}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              disabled={tradeLoading || balanceLoading || customerLoading}
+              loading={tradeLoading}
+            >
+              {isEdit ? 'Update Trade' : isCustomer ? 'Hold Trade' : 'Create Trade'}
+            </Button>
+          </Tooltip>
         </div>
       </form>
     </div>

@@ -17,12 +17,12 @@ import {
   PlusOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
-  PrinterOutlined,
-  FilePdfOutlined,
-  FileExcelOutlined,
+  DeleteOutlined,
+  StopOutlined,
+  FilterOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { approveTrade, fetchAllTrades } from '../../../redux/Slices/tradeSlice';
+import { approveTrade, fetchAllTrades, deactivateTrade } from '../../../redux/Slices/tradeSlice';
 import { fetchAllCustomers } from '../../../redux/Slices/customerSlice';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -33,12 +33,10 @@ const TradeList = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const tableRef = useRef();
-
   const { all: trades, loading } = useSelector((state) => state.trade);
   const { all: customers } = useSelector((state) => state.customer);
-
   const [searchTerm, setSearchTerm] = useState('');
-// console.log(trades)
+console.log("tra", trades)
   useEffect(() => {
     dispatch(fetchAllTrades());
     dispatch(fetchAllCustomers());
@@ -48,14 +46,18 @@ const TradeList = () => {
     dispatch(approveTrade(id));
   };
 
+  const handleDeactivate = (id) => {
+    dispatch(deactivateTrade(id));
+  };
+
   const getCustomerName = (id) => {
     const customer = customers.find((c) => c.id === id);
     return customer ? customer.full_name : 'Unknown';
   };
 
-  const filteredTrades = trades.filter(async (trade) => {
-    const customerName = await getCustomerName(trade?.customer_id)?.toLowerCase();
-    const customerId = trade.customer_id.toLowerCase();
+  const filteredTrades = trades.filter((trade) => {
+    const customerName = getCustomerName(trade.customer_id)?.toLowerCase();
+    const customerId = trade && trade.customer_id.toLowerCase();
     const tradeNo = trade.trade_number.toLowerCase();
     const search = searchTerm.toLowerCase();
 
@@ -72,10 +74,8 @@ const TradeList = () => {
       title: 'Customer',
       key: 'customer',
       render: (record) => (
-        <div>
-          <div className="font-medium text-indigo-700">
-            {getCustomerName(record.customer_id)}
-          </div>
+        <div  onClick={() => navigate(`/admin/customer/${record.customer_id}`)}>
+          <div className="font-medium text-indigo-700">{getCustomerName(record.customer_id)}</div>
           <div className="text-sm text-gray-500">ID: {record.customer_id}</div>
         </div>
       ),
@@ -86,7 +86,7 @@ const TradeList = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status) => (
-        <Tag color={status === 'approved' ? 'green' : 'orange'}>
+        <Tag color={status === 'approved' ? 'green' : status === 'hold' ? 'blue' : status === 'deactivated' ? 'red' : 'orange'}>
           {status.toUpperCase()}
         </Tag>
       ),
@@ -127,7 +127,7 @@ const TradeList = () => {
               onClick={() => navigate(`/admin/trades/edit/${record.id}`)}
             />
           </Tooltip>
-          {record.status !== 'approved' && (
+          {record.status === 'hold' && (
             <Tooltip title="Approve Trade">
               <Button
                 type="primary"
@@ -137,39 +137,20 @@ const TradeList = () => {
               />
             </Tooltip>
           )}
+          {record.status !== 'deactivated' && (
+            <Tooltip title="Deactivate Trade">
+              <Button
+                type="default"
+                shape="circle"
+                icon={<StopOutlined />}
+                onClick={() => handleDeactivate(record.id)}
+              />
+            </Tooltip>
+          )}
         </Space>
       ),
     },
   ];
-
-  const handleExportPDF = () => {
-    const doc = new jsPDF();
-    doc.text('Trade Report', 14, 10);
-    const tableData = filteredTrades.map((item) => [
-      item.trade_number,
-      getCustomerName(item.customer_id),
-      item.customer_id,
-      item.instrument,
-      item.status,
-      item.profit_loss,
-      item.profit_loss_value,
-      item.buy_price,
-      item.buy_quantity,
-      item.exit_price,
-      item.exit_quantity,
-      item.brokerage,
-      item.created_at,
-    ]);
-    doc.autoTable({
-      head: [[
-        'Trade No', 'Customer', 'Customer ID', 'Instrument', 'Status',
-        'P/L', 'P/L Value', 'Buy Price', 'Buy Qty', 'Exit Price',
-        'Exit Qty', 'Brokerage', 'Created At']
-      ],
-      body: tableData,
-    });
-    doc.save('trades.pdf');
-  };
 
   const handleExportCSV = () => {
     const csvData = filteredTrades.map((item) => ({
@@ -197,11 +178,6 @@ const TradeList = () => {
     document.body.removeChild(link);
   };
 
-  const handlePrint = useReactToPrint({
-    content: () => tableRef.current,
-    documentTitle: 'Trade Report',
-  });
-
   return (
     <div className="p-4 space-y-4 overflow-x-auto">
       <h2 className="text-2xl font-bold text-indigo-700">All Trades</h2>
@@ -213,15 +189,9 @@ const TradeList = () => {
           className="min-w-[200px] max-w-xs"
         />
         <div className="flex flex-wrap gap-2">
-          {/* <Button icon={<FilePdfOutlined />} onClick={handleExportPDF}>
-            Export PDF
-          </Button> */}
-          <Button icon={<FileExcelOutlined />} onClick={handleExportCSV}>
+          <Button icon={<FilterOutlined />} onClick={handleExportCSV}>
             Export CSV
           </Button>
-          {/* <Button icon={<PrinterOutlined />} onClick={handlePrint}>
-            Print
-          </Button> */}
           <Button
             type="primary"
             icon={<PlusOutlined />}

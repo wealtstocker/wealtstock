@@ -6,11 +6,9 @@ import {
   requestWithdrawal,
   getMyWithdrawals,
   getPendingWithdrawals,
-  // processWithdrawal,
-  // getMyTransactions,
-  // getAllTransactions,
   addFundRequest,
   approveFundRequest,
+  rejectFundRequest,
   updateFundRequestStatus,
   updateWithdrawalStatus,
   getMyWallet,
@@ -22,7 +20,6 @@ import {
   getAllWithdrawals,
   payout,
 } from "../controllers/walletNtransactionController.js";
-
 import { authenticate } from "../middlewares/authMiddleware.js";
 import { authorizeRoles } from "../middlewares/roleMiddleware.js";
 import { getUploadMiddleware } from "../utils/upload.js";
@@ -30,7 +27,7 @@ import { getUploadMiddleware } from "../utils/upload.js";
 const router = express.Router();
 const screenshotUpload = getUploadMiddleware("screenshots");
 
-// Customer routes
+// Customer Routes
 router.post(
   "/fund-request",
   authenticate,
@@ -38,21 +35,36 @@ router.post(
   addFundRequest
 );
 router.get("/fund-requests", authenticate, getMyFundRequests);
-
 router.get("/balance", authenticate, checkBalance);
 router.get("/my-withdrawals", authenticate, getMyWithdrawals);
 router.post("/withdraw", authenticate, requestWithdrawal);
 router.get("/wallet-history", authenticate, getMyWallet);
-// router.get("/my-transactions", authenticate, getMyTransactions);
 
-// Admin routes
+// Admin Routes
 router.post(
   "/approve-fund-request/:requestId",
   authenticate,
+  authorizeRoles("admin", "superadmin"),
   approveFundRequest
 );
-router.post("/payout/:requestId", authenticate, payout);
-router.get("/admin/fund-requests", getAllFundRequests);
+router.post(
+  "/reject-fund-request/:requestId",
+  authenticate,
+  authorizeRoles("admin", "superadmin"),
+  rejectFundRequest
+);
+router.post(
+  "/payout/:requestId",
+  authenticate,
+  authorizeRoles("admin", "superadmin"),
+  payout
+);
+router.get(
+  "/admin/fund-requests",
+  authenticate,
+  authorizeRoles("admin", "superadmin"),
+  getAllFundRequests
+);
 router.get(
   "/fund-requests/pending",
   authenticate,
@@ -65,17 +77,24 @@ router.get(
   authorizeRoles("admin", "superadmin"),
   getApprovedFundRequests
 );
-
 router.put(
   "/admin/topup",
   authenticate,
   authorizeRoles("admin", "superadmin"),
   topUpWallet
 );
-// router.put("/process-withdrawal",  processWithdrawal);
-router.get("/all-balances", getAllUserBalances);
-router.get("/all-transactions", getAllTransactions);
-
+router.get(
+  "/all-balances",
+  authenticate,
+  authorizeRoles("admin", "superadmin"),
+  getAllUserBalances
+);
+router.get(
+  "/all-transactions",
+  authenticate,
+  authorizeRoles("admin", "superadmin"),
+  getAllTransactions
+);
 router.get(
   "/pending-withdrawals",
   authenticate,
@@ -94,7 +113,6 @@ router.patch(
   authorizeRoles("admin", "superadmin"),
   updateWithdrawalStatus
 );
-
 router.patch(
   "/fund-request/status",
   authenticate,

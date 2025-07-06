@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Table, Input, Button, Tag } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
@@ -10,34 +10,37 @@ const TradeListPage = () => {
   const navigate = useNavigate();
   const { all, loading } = useSelector((state) => state.trade);
   const [searchText, setSearchText] = useState('');
-
+console.log(all)
   useEffect(() => {
-    dispatch(fetchAllTrades());
-  }, [dispatch]);
+    dispatch(fetchAllTrades({ navigate }));
+  }, [dispatch, navigate]);
 
-  const filteredData = all?.filter((trade) =>
-    trade.trade_number?.toLowerCase().includes(searchText.toLowerCase())
-  );
+  const filteredData = useMemo(() => {
+    const trades = all;
+    return trades.filter((trade) =>
+      trade.trade_number?.toLowerCase().includes(searchText.toLowerCase())
+    );
+  }, [all?.trades, searchText]);
 
   const columns = [
     {
       title: 'Trade No',
       dataIndex: 'trade_number',
       key: 'trade_number',
-      sorter: (a, b) => a.trade_number.localeCompare(b.trade_number),
-      responsive: ['xs', 'sm', 'md', 'lg'],
+      sorter: (a, b) => a.trade_number?.localeCompare(b.trade_number),
+      fixed: 'left',
     },
     {
       title: 'Buy Price',
       dataIndex: 'buy_price',
       key: 'buy_price',
-      sorter: (a, b) => parseFloat(a.buy_price) - parseFloat(b.buy_price),
+    
     },
     {
       title: 'Buy Qty',
       dataIndex: 'buy_quantity',
       key: 'buy_quantity',
-      sorter: (a, b) => a.buy_quantity - b.buy_quantity,
+    
     },
     {
       title: 'Buy Value',
@@ -86,13 +89,14 @@ const TradeListPage = () => {
       key: 'status',
       render: (status) => (
         <Tag color={status === 'completed' ? 'green' : 'orange'}>
-          {status.toUpperCase()}
+          {status?.toUpperCase()}
         </Tag>
       ),
     },
     {
       title: 'Action',
       key: 'action',
+      fixed: 'right',
       render: (_, record) => (
         <Button
           icon={<EyeOutlined />}
@@ -107,7 +111,7 @@ const TradeListPage = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-screen">
-      <h2 className="text-xl sm:text-2xl font-bold mb-4 text-gray-800">
+      <h2 className="text-xl sm:text-2xl font-bold mb-6 text-gray-800">
         📊 Trade List
       </h2>
 
@@ -119,16 +123,15 @@ const TradeListPage = () => {
         size="large"
       />
 
-      {/* ✅ Responsive scroll container */}
-      <div className="overflow-x-auto">
+      <div className="overflow-auto rounded-lg bg-white shadow">
         <Table
           columns={columns}
           dataSource={filteredData}
           loading={loading}
           rowKey="id"
-          pagination={{ pageSize: 10 }}
+          pagination={{ pageSize: 10, showSizeChanger: true }}
+          scroll={{ x: 1200 }}
           bordered
-          scroll={{ x: 1000 }} // 👈 Enables horizontal scroll on small screens
         />
       </div>
     </div>

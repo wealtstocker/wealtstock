@@ -84,7 +84,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
       items: [
         {
           icon: <Users size={18} />,
-          label: "All Clients",
+          label: "All Client",
           url: "/admin/customers",
         },
         {
@@ -97,11 +97,11 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
           label: "Fund-Request",
           url: "/admin/fund-requests",
         },
-        {
-          icon: <CreditCard size={18} />,
-          label: "Transactions",
-          url: "/admin/transactions",
-        },
+        // {
+        //   icon: <CreditCard size={18} />,
+        //   label: "Transactions",
+        //   url: "/admin/transactions",
+        // },
         {
           icon: <CreditCard size={18} />,
           label: "Withdrawal",
@@ -114,7 +114,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
       items: [
         {
           icon: <Banknote size={18} />,
-          label: "All User Funds",
+          label: "All client Funds",
           url: "/admin/all-wallet",
         },
         {
@@ -154,16 +154,16 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
         },
       ],
     },
-    {
-      section: "Settings",
-      items: [
-        {
-          icon: <Settings size={18} />,
-          label: "Admin Settings",
-          url: "/dashboard/settings",
-        },
-      ],
-    },
+    // {
+    //   section: "Settings",
+    //   items: [
+    //     {
+    //       icon: <Settings size={18} />,
+    //       label: "Admin Settings",
+    //       url: "/dashboard/settings",
+    //     },
+    //   ],
+    // },
     {
       section: " ",
       items: [

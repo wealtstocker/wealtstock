@@ -134,9 +134,9 @@ const PayinScreen = () => {
           <Button
             type="primary"
             icon={<CheckCircleOutlined />}
-            onClick={() => handleApprove(record.id)}
+            // onClick={() => handleApprove(record.id)}
           >
-            Approve
+            pending
           </Button>
         ) : (
           <Tag color="green">Approved</Tag>

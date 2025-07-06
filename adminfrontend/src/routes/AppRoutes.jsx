@@ -19,6 +19,7 @@ import PayinScreen from "../pages/Dashboard/fund/PayinScreen";
 import AdminDashboard from "../pages/Dashboard";
 import CallbackRequest from "../pages/Dashboard/contact/CallbackRequest";
 import ContactMessages from "../pages/Dashboard/contact/Contactlist";
+import AdminCustomerBalances from "../pages/Dashboard/fund/AdminCustomerBalances";
 
 const AppRoutes = () => {
   return (
@@ -40,7 +41,7 @@ const AppRoutes = () => {
         <Route path="pay-out" element={<PayoutScreen />} />
         <Route path="transactions" element={<AdminTransactionList />} />
         <Route path="withdrawal" element={<AdminWithdrawalList />} />
-        <Route path="all-wallet" element={<AdminWalletManager />} />
+        <Route path="all-wallet" element={<AdminCustomerBalances />} />
         <Route path="site-config" element={<SiteConfigPage />} />
         <Route path="contact" element={<ContactMessages />} />
         <Route path="callback" element={<CallbackRequest />} />

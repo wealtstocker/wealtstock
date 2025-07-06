@@ -114,7 +114,11 @@ const WalletPage = () => {
       dataIndex: "amount",
       key: "amount",
       width: 100,
-      render: (amt) => <b className="text-green-700">₹{amt}</b>,
+      render: (amt, record) => (
+        <b className={record.type === "credit" ? "text-green-700" : "text-red-500"}>
+          ₹{parseFloat(amt).toFixed(2)}
+        </b>
+      ),
     },
     {
       title: "Type",

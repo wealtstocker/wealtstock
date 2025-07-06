@@ -1,109 +1,56 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import gsap from "gsap";
+import { useSelector } from "react-redux";
+import { Menu, Button, Dropdown, Avatar } from "antd";
+import { HomeOutlined, InfoCircleOutlined, PhoneOutlined, LoginOutlined, UserAddOutlined, UserOutlined } from "@ant-design/icons";
 import Logo from "../assets/logon.jfif";
-
-// Icons
 import {
-  FaHome,
-  FaInfoCircle,
   FaServicestack,
-  FaPhoneAlt,
-  FaUserPlus,
-  FaSignInAlt,
 } from "react-icons/fa";
-
 const Navbar = () => {
-  const navRef = useRef();
-  const mobileMenuRef = useRef();
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState(null);
+  const { user } = useSelector((state) => state.auth);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
-    if (token && storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setIsLoggedIn(true);
-      } catch (err) {
-        console.error("Failed to parse user", err);
-        setIsLoggedIn(false);
-      }
-    } else {
-      setIsLoggedIn(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    gsap.from(navRef.current, {
-      y: -100,
-      duration: 1,
-      ease: "bounce.out",
-    });
-  }, []);
-
-  useEffect(() => {
-    if (isOpen) {
-      gsap.fromTo(
-        mobileMenuRef.current,
-        { opacity: 0, y: -20 },
-        { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }
-      );
-    }
-  }, [isOpen]);
-
-  const hoverAnim = (target) => {
-    gsap.to(target, {
-      x: 5,
-      duration: 0.3,
-      ease: "power1.out",
-    });
-  };
-
-  const leaveAnim = (target) => {
-    gsap.to(target, {
-      x: 0,
-      duration: 0.3,
-      ease: "power1.out",
-    });
-  };
-
-  const navItems = [
-    { to: "/", label: "Home", icon: <FaHome /> },
-    { to: "/about", label: "About", icon: <FaInfoCircle /> },
+   const navItems = [
+    { to: "/", label: "Home", icon: <HomeOutlined /> },
+    { to: "/about", label: "About", icon: <InfoCircleOutlined /> },
     { to: "/services", label: "Services", icon: <FaServicestack /> },
-    { to: "/contact", label: "Contact", icon: <FaPhoneAlt /> },
+    { to: "/contact", label: "Contact", icon: <PhoneOutlined /> },
   ];
 
+
+  const userMenu = (
+    <Menu>
+      <Menu.Item key="dashboard">
+        <Link to="/dashboard">Dashboard</Link>
+      </Menu.Item>
+      <Menu.Item key="profile">
+        <Link to="/dashboard/profile">Profile</Link>
+      </Menu.Item>
+      <Menu.Item key="logout" onClick={() => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.reload();
+      }}>
+        Logout
+      </Menu.Item>
+    </Menu>
+  );
+
   return (
-    <nav
-      ref={navRef}
-      className="bg-white shadow-md p-4 fixed w-full z-50 flex items-center justify-between"
-    >
-      {/* Left: Logo */}
+    <nav className="bg-white shadow-md p-4 fixed w-full z-50 flex items-center justify-between">
+      {/* Logo */}
       <div className="flex-shrink-0">
         <Link to="/" title="Go to Home - Finance Market">
-          <img
-            src={Logo}
-            alt="Logo"
-            className="h-10 w-auto"
-          />
+          <img src={Logo} alt="Logo" className="h-10 w-auto" />
         </Link>
       </div>
 
-      {/* Center: Nav Links - Desktop */}
+      {/* Desktop Nav Links */}
       <ul className="hidden md:flex flex-1 justify-center gap-6 text-gray-700 font-medium">
         {navItems.map(({ to, label, icon }) => (
           <li key={label}>
-            <Link
-              to={to}
-              className="flex items-center gap-2 hover:text-blue-600 transition"
-              onMouseEnter={(e) => hoverAnim(e.currentTarget)}
-              onMouseLeave={(e) => leaveAnim(e.currentTarget)}
-            >
+            <Link to={to} className="flex items-center gap-2 hover:text-blue-600 transition">
               {icon}
               {label}
             </Link>
@@ -111,147 +58,74 @@ const Navbar = () => {
         ))}
       </ul>
 
-      {/* Right: Login and Registration Buttons */}
-      {/* Right Side Controls */}
+      {/* Desktop Right Controls */}
       <div className="hidden md:flex gap-4 items-center">
-        {isLoggedIn ? (
+        {user ? (
           <>
-            <span
-              title={`Welcome, ${user?.full_name || "User"}`}
-              className="text-sm font-medium text-gray-700"
-            >
-              👋 {user?.full_name?.split(" ")[0] || "User"}
+            <span className="text-sm font-medium text-gray-700">
+              👋 {user.full_name?.split(" ")[0] || "User"}
             </span>
-
-            <Link
-              to="/dashboard"
-              title="Go to Dashboard"
-              className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-300 transform hover:scale-105"
-            >
-              <FaHome className="text-white" />
-              Dashboard
-            </Link>
-
-            <Link
-              to="/dashboard/profile"
-              title="View Profile"
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition"
-            >
-              <FaUserPlus />
-            </Link>
+            <Dropdown overlay={userMenu} trigger={["click"]}>
+              <Avatar icon={<UserOutlined />} className="cursor-pointer bg-blue-600" />
+            </Dropdown>
           </>
         ) : (
           <>
-            <Link
-              to="/login"
-              title="Login to access your dashboard"
-              className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-105"
-            >
-              <FaSignInAlt className="inline mr-1" />
-              Login
+            <Link to="/login" className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+              <LoginOutlined className="mr-1" /> Login
             </Link>
-            <Link
-              to="/register"
-              className="flex items-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-red-500 transition duration-300 transform hover:scale-105"
-            >
-              <FaUserPlus className="inline mr-1" />
-              New Registration
+            <Link to="/register" className="px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition">
+              <UserAddOutlined className="mr-1" /> Register
             </Link>
           </>
         )}
       </div>
 
-
-      {/* Hamburger Icon - Mobile */}
+      {/* Mobile Hamburger */}
       <div className="md:hidden">
-        <button
+        <Button
+          type="text"
+          icon={isOpen ? <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg> : <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>}
           onClick={() => setIsOpen(!isOpen)}
-          className="text-gray-800 focus:outline-none"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            {isOpen ? (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            ) : (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            )}
-          </svg>
-        </button>
+        />
       </div>
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div
-          ref={mobileMenuRef}
-          className="absolute top-full left-0 w-full bg-white shadow-md py-4 px-6 flex flex-col items-start gap-4 md:hidden text-gray-700 font-medium"
-        >
+        <div className="absolute top-full left-0 w-full bg-white shadow-md py-4 px-6 flex flex-col gap-4 md:hidden text-gray-700 font-medium">
           {navItems.map(({ to, label, icon }) => (
-            <Link
-              key={label}
-              to={to}
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2 hover:text-blue-600 transition"
-            >
+            <Link key={label} to={to} onClick={() => setIsOpen(false)} className="flex items-center gap-2 hover:text-blue-600 transition">
               {icon}
               {label}
             </Link>
           ))}
-          {isLoggedIn ? (
+          {user ? (
             <>
-              <div className="text-sm font-medium px-2">👋 {user?.full_name || "User"}</div>
-              <Link
-                to="/dashboard"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-300 transform hover:scale-105"
-              >
-                <FaHome />
+              <span className="text-sm font-medium">👋 {user.full_name?.split(" ")[0] || "User"}</span>
+              <Link to="/dashboard" onClick={() => setIsOpen(false)} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
                 Dashboard
               </Link>
-              <Link
-                to="/dashboard/profile"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-105"
-              >
-                <FaUserPlus />
+              <Link to="/dashboard/profile" onClick={() => setIsOpen(false)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                 Profile
               </Link>
+              <Button type="link" onClick={() => {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                window.location.reload();
+              }}>
+                Logout
+              </Button>
             </>
           ) : (
             <>
-              <Link
-                to="/login"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-red-500 transition duration-300 transform hover:scale-105"
-              >
-                <FaSignInAlt />
-                Login
+              <Link to="/login" onClick={() => setIsOpen(false)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                <LoginOutlined className="mr-1" /> Login
               </Link>
-              <Link
-                to="/register"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-red-500 transition duration-300 transform hover:scale-105"
-              >
-                <FaUserPlus />
-                New Registration
+              <Link to="/register" onClick={() => setIsOpen(false)} className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition">
+                <UserAddOutlined className="mr-1" /> Register
               </Link>
             </>
           )}
-
         </div>
       )}
     </nav>

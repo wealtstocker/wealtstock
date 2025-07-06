@@ -96,7 +96,7 @@ const DashboardChildFinance = () => {
       </div>
 
       {/* Recent Fund Deposits & Withdrawals */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-5">
         {/* Fund Deposits */}
         <div className="bg-white p-4 rounded-xl shadow">
           <div className="flex items-center gap-2 text-blue-600 mb-2 font-semibold">
@@ -133,7 +133,7 @@ const DashboardChildFinance = () => {
         </div>
         <ul className="text-sm space-y-2">
           {customers.slice(0, 5).map((c) => (
-            <li key={c.id} className="border-b pb-2 last:border-none">
+            <li key={c.id} className="border-b pb-2 last:border-none"  onClick={() => navigate(`/admin/customer/${c.id}`)}>
               <p className="font-medium">{c.full_name}</p>
               <p className="text-gray-500 text-xs">{c.email}</p>
             </li>

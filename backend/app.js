@@ -8,7 +8,7 @@ import helmet from "helmet";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// Import routes
+// Routes
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import walletNtransactionRoutes from "./routes/walletNtransactionRoutes.js";
@@ -21,21 +21,25 @@ import contactRoutes from "./routes/contactRoutes.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Init express app
+// Initialize express app
 const app = express();
 
-// ✅ Helmet with CORP disabled to allow cross-origin image loading
+// ✅ Helmet with CORS resource policy disabled
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
   })
 );
 
-// ✅ Allow specific frontend origins
-const allowedOrigins = [process.env.USER_FRONTEND, process.env.ADMIN_FRONTEND];
+// ✅ Allowed frontend origins
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://admin.wealtstockresearchfirm.com",
+  "https://wealtstockresearchfirm.com",
+];
 
-console.log("Allowed Frontends:", allowedOrigins);
-
+// ✅ CORS middleware with allowlist
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -47,14 +51,20 @@ app.use(
     },
     credentials: true,
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
-    allowedHeaders: "Origin,X-Requested-With,Content-Type,Accept,Authorization",
+    allowedHeaders: [
+      "Origin",
+      "X-Requested-With",
+      "Content-Type",
+      "Accept",
+      "Authorization",
+    ],
   })
 );
 
-// ✅ Handle preflight requests globally
+// ✅ Preflight OPTIONS handler
 app.options("*", cors());
 
-// ✅ Manually add CORS headers to all responses
+// ✅ Set CORS headers manually for static assets
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
@@ -64,26 +74,26 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ Serve static files (e.g., /uploads/site/xyz.png)
+// ✅ Serve static files (e.g., images)
 app.use(
   "/uploads",
   express.static(path.join(__dirname, "uploads"), {
     setHeaders: (res, filePath, stat) => {
-      res.set("Access-Control-Allow-Origin", "*"); // Optional: use origin instead of *
+      res.set("Access-Control-Allow-Origin", "*");
     },
   })
 );
 
-// ✅ Other middlewares
+// Other middlewares
 app.use(compression());
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Swagger Docs
+// Swagger docs
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// ✅ API Routes
+// API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/customer", customersRouter);
@@ -92,7 +102,7 @@ app.use("/api/wallet", walletNtransactionRoutes);
 app.use("/api/trade", tradeRoutes);
 app.use("/api", contactRoutes);
 
-// ✅ Root route
+// Root
 app.get("/", (req, res) => {
   res.send("Welcome to Role-Based Auth API (MySQL + Node.js)");
 });

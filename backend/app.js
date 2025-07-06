@@ -39,7 +39,6 @@ const allowedOrigins = [
 
 console.log("Allowed Frontends:", allowedOrigins);
 
-// ✅ CORS configuration
 app.use(
   cors({
     origin: function (origin, callback) {

@@ -22,23 +22,16 @@ const __dirname = path.resolve();
 
 // ✅ Security & Middleware
 app.use(helmet());
-app.use(cors({
-  origin: [process.env.USER_FRONTEND, process.env.ADMIN_FRONTEND, "*"],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: [process.env.USER_FRONTEND, process.env.ADMIN_FRONTEND, "*"],
+    credentials: true,
+  })
+);
 app.use(compression());
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
-
-// ✅ Serve Static Files With CORS-Safe Headers
-app.use('/uploads', (req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'); // ✅ Fix for image display
-  next();
-});
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/uploads/site', express.static(path.join(__dirname, 'uploads/site')));
 
 // ✅ Swagger API Docs
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -50,7 +43,7 @@ app.use("/api/customer", customersRouter);
 app.use("/api/site-config", siteConfigRoutes);
 app.use("/api/wallet", walletNtransactionRoutes);
 app.use("/api/trade", tradeRoutes);
-app.use('/api', contactRoutes);
+app.use("/api", contactRoutes);
 
 // ✅ Default Route
 app.get("/", (req, res) => {

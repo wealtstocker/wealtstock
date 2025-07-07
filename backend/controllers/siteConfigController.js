@@ -6,32 +6,18 @@ import fs from "fs";
 const sanitizeFileName = (filename) => filename.replace(/\s+/g, "_");
 
 // ✅ Convert uploaded file to full URL
-const fileToUrl = (req, field) => {
-  if (req.files && req.files[field] && req.files[field][0]) {
-    const file = req.files[field][0];
-    const sanitized = sanitizeFileName(file.filename);
-
-    const uploadDir = path.resolve("uploads/site");
-    const oldPath = path.join(uploadDir, file.filename);
-    const newPath = path.join(uploadDir, sanitized);
-
-    if (file.filename !== sanitized && fs.existsSync(oldPath)) {
-      fs.renameSync(oldPath, newPath);
-    }
-
-    const baseUrl = `${req.protocol}://${req.get("host")}/uploads/site`;
-    return `${baseUrl}/${sanitized}`;
-  }
-  return null;
+const getFileUrl = (req, field) => {
+  return req.files?.[field]?.[0]?.path || null;
 };
-
 // ✅ GET site config
 export const getSiteConfig = async (req, res) => {
   try {
     const [rows] = await pool.query("SELECT * FROM site_config LIMIT 1");
     res.json({ message: "Success", data: rows[0] || null });
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch config", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch config", error: error.message });
   }
 };
 
@@ -46,17 +32,23 @@ export const createSiteConfig = async (req, res) => {
     address,
   } = req.body;
 
-  const qr_image_url = fileToUrl(req, "qr_image");
-  const logo_url = fileToUrl(req, "logo");
+  const qr_image_url = getFileUrl(req, "qr_image");
+  const logo_url = getFileUrl(req, "logo");
 
   if (!upi_id || !site_name || !qr_image_url) {
-    return res.status(400).json({ message: "UPI ID, site name, and QR image are required" });
+    return res
+      .status(400)
+      .json({ message: "UPI ID, site name, and QR image are required" });
   }
 
   try {
-    const [existing] = await pool.query("SELECT COUNT(*) as count FROM site_config");
+    const [existing] = await pool.query(
+      "SELECT COUNT(*) as count FROM site_config"
+    );
     if (existing[0].count > 0) {
-      return res.status(400).json({ message: "Site configuration already exists" });
+      return res
+        .status(400)
+        .json({ message: "Site configuration already exists" });
     }
 
     const [result] = await pool.query(
@@ -76,10 +68,17 @@ export const createSiteConfig = async (req, res) => {
       ]
     );
 
-    const [newConfig] = await pool.query("SELECT * FROM site_config WHERE id = ?", [result.insertId]);
-    res.status(201).json({ message: "Created successfully", data: newConfig[0] });
+    const [newConfig] = await pool.query(
+      "SELECT * FROM site_config WHERE id = ?",
+      [result.insertId]
+    );
+    res
+      .status(201)
+      .json({ message: "Created successfully", data: newConfig[0] });
   } catch (error) {
-    res.status(500).json({ message: "Failed to create config", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to create config", error: error.message });
   }
 };
 
@@ -95,11 +94,14 @@ export const updateSiteConfig = async (req, res) => {
     address,
   } = req.body;
 
-  const qr_image_url = fileToUrl(req, "qr_image");
-  const logo_url = fileToUrl(req, "logo");
+  const qr_image_url = getFileUrl(req, "qr_image");
+  const logo_url = getFileUrl(req, "logo");
 
   try {
-    const [existing] = await pool.query("SELECT * FROM site_config WHERE id = ?", [id]);
+    const [existing] = await pool.query(
+      "SELECT * FROM site_config WHERE id = ?",
+      [id]
+    );
     if (!existing[0]) {
       return res.status(404).json({ message: "Config not found" });
     }
@@ -109,11 +111,15 @@ export const updateSiteConfig = async (req, res) => {
 
     if (site_name) fields.push("site_name = ?"), values.push(site_name);
     if (upi_id) fields.push("upi_id = ?"), values.push(upi_id);
-    if (support_email) fields.push("support_email = ?"), values.push(support_email);
-    if (support_phone) fields.push("support_phone = ?"), values.push(support_phone);
-    if (support_info) fields.push("support_info = ?"), values.push(support_info);
+    if (support_email)
+      fields.push("support_email = ?"), values.push(support_email);
+    if (support_phone)
+      fields.push("support_phone = ?"), values.push(support_phone);
+    if (support_info)
+      fields.push("support_info = ?"), values.push(support_info);
     if (address) fields.push("address = ?"), values.push(address);
-    if (qr_image_url) fields.push("qr_image_url = ?"), values.push(qr_image_url);
+    if (qr_image_url)
+      fields.push("qr_image_url = ?"), values.push(qr_image_url);
     if (logo_url) fields.push("logo_url = ?"), values.push(logo_url);
 
     if (fields.length === 0) {
@@ -121,12 +127,20 @@ export const updateSiteConfig = async (req, res) => {
     }
 
     values.push(id);
-    await pool.query(`UPDATE site_config SET ${fields.join(", ")} WHERE id = ?`, values);
+    await pool.query(
+      `UPDATE site_config SET ${fields.join(", ")} WHERE id = ?`,
+      values
+    );
 
-    const [updatedConfig] = await pool.query("SELECT * FROM site_config WHERE id = ?", [id]);
+    const [updatedConfig] = await pool.query(
+      "SELECT * FROM site_config WHERE id = ?",
+      [id]
+    );
     res.json({ message: "Updated successfully", data: updatedConfig[0] });
   } catch (error) {
-    res.status(500).json({ message: "Failed to update config", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to update config", error: error.message });
   }
 };
 
@@ -135,7 +149,10 @@ export const deleteSiteConfig = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const [existing] = await pool.query("SELECT id FROM site_config WHERE id = ?", [id]);
+    const [existing] = await pool.query(
+      "SELECT id FROM site_config WHERE id = ?",
+      [id]
+    );
     if (!existing[0]) {
       return res.status(404).json({ message: "Config not found" });
     }
@@ -143,6 +160,8 @@ export const deleteSiteConfig = async (req, res) => {
     await pool.query("DELETE FROM site_config WHERE id = ?", [id]);
     res.json({ message: "Deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete config", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to delete config", error: error.message });
   }
 };

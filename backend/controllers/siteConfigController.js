@@ -42,7 +42,6 @@ export const createSiteConfig = async (req, res) => {
     upi_id,
     support_email,
     support_phone,
-    site_title,
     support_info,
     address,
   } = req.body;
@@ -63,8 +62,8 @@ export const createSiteConfig = async (req, res) => {
     const [result] = await pool.query(
       `INSERT INTO site_config (
         site_name, upi_id, qr_image_url, logo_url, support_email,
-        support_phone, site_title, support_info, address
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        support_phone, support_info, address
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         site_name,
         upi_id,
@@ -72,7 +71,6 @@ export const createSiteConfig = async (req, res) => {
         logo_url,
         support_email,
         support_phone,
-        site_title,
         support_info,
         address,
       ]
@@ -93,7 +91,6 @@ export const updateSiteConfig = async (req, res) => {
     upi_id,
     support_email,
     support_phone,
-    site_title,
     support_info,
     address,
   } = req.body;
@@ -114,7 +111,6 @@ export const updateSiteConfig = async (req, res) => {
     if (upi_id) fields.push("upi_id = ?"), values.push(upi_id);
     if (support_email) fields.push("support_email = ?"), values.push(support_email);
     if (support_phone) fields.push("support_phone = ?"), values.push(support_phone);
-    if (site_title) fields.push("site_title = ?"), values.push(site_title);
     if (support_info) fields.push("support_info = ?"), values.push(support_info);
     if (address) fields.push("address = ?"), values.push(address);
     if (qr_image_url) fields.push("qr_image_url = ?"), values.push(qr_image_url);

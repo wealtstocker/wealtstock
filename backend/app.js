@@ -47,6 +47,10 @@ app.options("*", cors()); // 👈 Handle preflight CORS
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} from ${req.headers.origin}`);
+  next();
+});
 
 // ✅ Swagger API Docs
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));

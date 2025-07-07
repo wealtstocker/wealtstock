@@ -230,7 +230,7 @@ const SiteConfigPage = () => {
           </Form.Item>
 
           <div className="md:col-span-2 flex justify-between">
-            {/* <Button
+            <Button
               type="primary"
               danger
               icon={<DeleteOutlined />}
@@ -238,7 +238,7 @@ const SiteConfigPage = () => {
               disabled={submitting || loading || !isEdit}
             >
               Delete
-            </Button> */}
+            </Button>
             <div>""</div>
             <Button
               type="primary"

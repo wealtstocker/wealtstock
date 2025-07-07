@@ -20,15 +20,23 @@ import contactRoutes from "./routes/contactRoutes.js";
 const app = express();
 const __dirname = path.resolve();
 
-// ✅ Security & Middleware
+// ✅ Secure Middleware
 app.use(helmet());
+app.use(compression());
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ✅ Allowlisted CORS Setup
+const allowedOrigins = [
+  process.env.USER_FRONTEND || "https://wealtstockresearchfirm.com",
+  process.env.ADMIN_FRONTEND || "https://admin.wealtstockresearchfirm.com",
+];
+
 app.use(
   cors({
     origin: function (origin, callback) {
-      const allowedOrigins = [
-        process.env.USER_FRONTEND,
-        process.env.ADMIN_FRONTEND,
-      ];
+      // Allow server-to-server, tools like Postman, or SSR without origin
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -38,24 +46,21 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    preflightContinue: false,
-    optionsSuccessStatus: 200,
   })
 );
-// 👈 Handle preflight CORS
 
-app.use(express.json());
-app.use(cookieParser());
-app.use(express.urlencoded({ extended: true }));
+// ✅ Logger (optional, good for debugging)
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path} from ${req.headers.origin}`);
+  console.log(
+    `[${req.method}] ${req.originalUrl} - Origin: ${req.headers.origin}`
+  );
   next();
 });
 
-// ✅ Swagger API Docs
+// ✅ Swagger Docs
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// ✅ Routes
+// ✅ All API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/customer", customersRouter);
@@ -64,7 +69,7 @@ app.use("/api/wallet", walletNtransactionRoutes);
 app.use("/api/trade", tradeRoutes);
 app.use("/api", contactRoutes);
 
-// ✅ Default Route
+// ✅ Default route
 app.get("/", (req, res) => {
   res.send("Welcome to Role-Based Auth API (MySQL + Node.js)");
 });

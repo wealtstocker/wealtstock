@@ -42,7 +42,7 @@ app.use(
     optionsSuccessStatus: 200,
   })
 );
-app.options("*", cors()); // 👈 Handle preflight CORS
+// 👈 Handle preflight CORS
 
 app.use(express.json());
 app.use(cookieParser());

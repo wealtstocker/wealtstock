@@ -24,11 +24,26 @@ const __dirname = path.resolve();
 app.use(helmet());
 app.use(
   cors({
-    origin: [process.env.USER_FRONTEND, process.env.ADMIN_FRONTEND],
+    origin: function (origin, callback) {
+      const allowedOrigins = [
+        process.env.USER_FRONTEND,
+        process.env.ADMIN_FRONTEND,
+      ];
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    preflightContinue: false,
+    optionsSuccessStatus: 200,
   })
 );
-app.use(compression());
+app.options("*", cors()); // 👈 Handle preflight CORS
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));

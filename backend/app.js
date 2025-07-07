@@ -24,7 +24,7 @@ const __dirname = path.resolve();
 app.use(helmet());
 app.use(
   cors({
-    origin: [process.env.USER_FRONTEND, process.env.ADMIN_FRONTEND, "*"],
+    origin: [process.env.USER_FRONTEND, process.env.ADMIN_FRONTEND],
     credentials: true,
   })
 );

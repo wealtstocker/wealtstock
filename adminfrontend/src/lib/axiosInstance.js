@@ -30,7 +30,7 @@ axiosInstance.interceptors.response.use(
       // Optional: logout logic or redirect to login
       console.warn("Unauthorized - Logging out...");
       localStorage.removeItem("token");
-      window.location.href = "/login";
+      window.location.href = "/";
     }
     return Promise.reject(error);
   }

@@ -52,7 +52,7 @@ const AdminDashboard = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [filteredFundData, setFilteredFundData] = useState([]);
-
+console.log("b-----------------",balances)
   useEffect(() => {
     dispatch(fetchAllCustomers());
     dispatch(fetchAllBalances());
@@ -121,6 +121,7 @@ const AdminDashboard = () => {
       title: "Date",
       dataIndex: "created_at",
       key: "created_at",
+       responsive: ["md"],
       render: (date) => (
         <span className="text-gray-600 text-sm">{moment(date).format("DD MMM YYYY, h:mm A")}</span>
       ),
@@ -224,7 +225,7 @@ const AdminDashboard = () => {
                   <WalletOutlined className="!text-purple-600 text-2xl" />
                   <div>
                     <Text className="!text-gray-500">Wallets Active</Text>
-                    <Title level={4} className="!text-gray-800 m-0">{balances && balances.length}</Title>
+                    <Title level={4} className="!text-gray-800 m-0">{balances?.length}</Title>
                   </div>
                 </div>
               </Card>

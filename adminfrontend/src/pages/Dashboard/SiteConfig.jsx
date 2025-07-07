@@ -135,7 +135,7 @@ const SiteConfigPage = () => {
           layout="vertical"
           form={form}
           onFinish={handleFinish}
-          className="bg-white p-6 rounded-lg shadow grid grid-cols-1 md:grid-cols-2 gap-4"
+          className="bg-white !p-6 rounded-lg shadow grid grid-cols-1 md:grid-cols-2 gap-4"
         >
           <Divider className="md:col-span-2">Payment Details</Divider>
 

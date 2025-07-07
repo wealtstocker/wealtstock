@@ -1,47 +1,41 @@
 import React, { useEffect, useState } from 'react';
 import axiosInstance from '../../../api/axiosInstance';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchSiteConfig } from '../../../redux/Slices/siteConfigSlice'
-import { Upload, Form, Button } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import { fetchSiteConfig } from '../../../redux/Slices/siteConfigSlice';
+import { Upload, Form, Button, Tooltip, Modal } from 'antd';
+import { UploadOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import toast from '../../Services/toast';
+
 const AddFundPage = () => {
-  const [amount, setAmount] = useState('');
-  const [utr, setUtr] = useState('');
+  const [form] = Form.useForm();
   const [screenshot, setScreenshot] = useState(null);
-  const [note, setNote] = useState('');
+  const [previewURL, setPreviewURL] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
- const dispatch = useDispatch();
+  const dispatch = useDispatch();
   const { config } = useSelector((state) => state.siteConfig);
-  const user = JSON.parse(localStorage.getItem("user")); 
- useEffect(() => {
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  useEffect(() => {
     dispatch(fetchSiteConfig());
   }, [dispatch]);
 
-  const handleScreenshotUpload = (e) => {
-    setScreenshot(e.target.files[0]);
+  const handleScreenshotUpload = (file) => {
+    setScreenshot(file);
+    setPreviewURL(URL.createObjectURL(file));
+    return false; // prevent automatic upload
   };
- const handleSubmit = async (e) => {
-    e.preventDefault();
 
-    if (!amount || isNaN(amount) || Number(amount) <= 0) {
-      toast.error("Enter a valid amount greater than 0");
-      return;
-    }
-    if (!utr.trim()) {
-      toast .error("Please enter UTR or reference number");
-      return;
-    }
+  const handleSubmit = async (values) => {
     if (!screenshot) {
-      toast.error("Please upload a screenshot");
+      toast.error("Please upload a payment screenshot.");
       return;
     }
 
     const formData = new FormData();
-    formData.append("amount", amount);
-    formData.append("utr_number", utr);
-    formData.append("note", note);
+    formData.append("amount", values.amount);
+    formData.append("utr_number", values.utr);
+    formData.append("note", values.note || "");
     formData.append("method", "upi");
     formData.append("screenshot", screenshot);
 
@@ -54,14 +48,18 @@ const AddFundPage = () => {
         },
       });
 
-      console.log("✅ Fund request response:", res.data);
       toast.success("Request submitted successfully!");
       setSubmitted(true);
-      setAmount("");
-      setUtr("");
+      form.resetFields();
       setScreenshot(null);
       setPreviewURL(null);
-      setNote("");
+
+      Modal.success({
+        title: "Payment Submitted",
+        content: "Thank you! Your request will be verified within 12–24 hours.",
+        centered: true,
+      });
+
     } catch (err) {
       console.error("❌ Error submitting request:", err);
       toast.error("Submission failed. Try again.");
@@ -69,102 +67,123 @@ const AddFundPage = () => {
       setLoading(false);
     }
   };
+
   return (
-    <div className="max-w-3xl mx-auto p-4 bg-gray-50 rounded shadow-md md:mt-3">
-      <h2 className="text-xl font-bold text-red-600 mb-2">Pay-In</h2>
+    <div className="max-w-3xl mx-auto p-6 bg-white shadow-lg rounded-lg mt-6">
+      <h2 className="text-2xl font-semibold text-blue-700 mb-4 border-b pb-2">💰 Fund Deposit (Pay-In)</h2>
 
-     <div className="text-center mb-6">
-          {config?.qr_image_url ? (
-            <img
-              src={config.qr_image_url}
-              alt="UPI QR Code"
-               crossOrigin="anonymous"
-              className="w-32 h-32 mx-auto object-contain border"
-            />
-          ) : (
-            <div className="text-sm text-gray-500">QR Code not available</div>
-          )}
-
-          <p className="mt-2 text-sm">
-            UPI ID: <strong>{config?.upi_id || 'Not Available'}</strong>
-          </p>
-          <p className="text-xs text-gray-600">Scan the QR and make a payment.</p>
-        </div>
+      <div className="text-center mb-6">
+        {config.data?.qr_image_url ? (
+          <img
+            src={config.data.qr_image_url}
+            alt="UPI QR Code"
+            className="w-36 h-36 mx-auto object-contain border rounded"
+          />
+        ) : (
+          <div className="text-sm text-gray-500">QR Code not available</div>
+        )}
+        <p className="mt-3 text-sm">
+          UPI ID: <strong className="text-blue-600">{config?.data?.upi_id || 'N/A'}</strong>
+        </p>
+        <p className="text-xs text-gray-600">Scan and pay before submitting this form.</p>
+      </div>
 
       {!submitted ? (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Amount (₹)</label>
+        <Form
+          layout="vertical"
+          form={form}
+          onFinish={handleSubmit}
+          className="space-y-2"
+        >
+          <Form.Item
+            label="Amount (₹)"
+            name="amount"
+            rules={[
+              { required: true, message: "Amount is required" },
+              {
+                validator(_, value) {
+                  if (value > 0) return Promise.resolve();
+                  return Promise.reject("Enter a valid amount greater than 0");
+                },
+              },
+            ]}
+          >
             <input
               type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full border rounded px-3 py-2 mt-1"
+              className="w-full border rounded px-3 py-2"
               placeholder="Enter deposit amount"
-              required
             />
-          </div>
+          </Form.Item>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              UTR / UPI Reference Number
-            </label>
+          <Form.Item
+            label={
+              <span>
+                UTR / Reference Number&nbsp;
+                <Tooltip title="Enter the transaction reference / UTR number shown after payment.">
+                  <InfoCircleOutlined />
+                </Tooltip>
+              </span>
+            }
+            name="utr"
+            rules={[{ required: true, message: "UTR/Ref number is required" }]}
+          >
             <input
               type="text"
-              value={utr}
-              onChange={(e) => setUtr(e.target.value)}
-              className="w-full border rounded px-3 py-2 mt-1"
+              className="w-full border rounded px-3 py-2"
               placeholder="Enter UPI Ref. Number"
-              required
             />
-          </div>
+          </Form.Item>
 
-          <div>
-            <Form.Item
-  label="Attach Payment Screenshot"
-  name="screenshot"
-  rules={[{ required: true, message: 'Please upload a payment screenshot!' }]}
->
-  <Upload
-    accept="image/*"
-    showUploadList={true}
-    beforeUpload={(file) => {
-      handleScreenshotUpload({ target: { files: [file] } });
-      return false; // prevent auto-upload
-    }}
-    maxCount={1}
-  >
-    <Button icon={<UploadOutlined />}>Click to Upload</Button>
-  </Upload>
-</Form.Item>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Note (Optional)</label>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="w-full border rounded px-3 py-2 mt-1"
-              placeholder="Any remarks..."
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full mt-4 bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-            disabled={loading}
+          <Form.Item
+            label="Attach Payment Screenshot"
+            name="screenshot"
+            rules={[{ required: true, message: "Upload a screenshot!" }]}
           >
-            {loading ? "Submitting..." : "Submit This Form After UPI Payment"}
-          </button>
-        </form>
+            <Upload
+              accept="image/*"
+              showUploadList={false}
+              beforeUpload={handleScreenshotUpload}
+              maxCount={1}
+            >
+              <Button icon={<UploadOutlined />}>Click to Upload Screenshot</Button>
+            </Upload>
+            {previewURL && (
+              <div className="mt-2">
+                <img
+                  src={previewURL}
+                  alt="Preview"
+                  className="w-28 h-28 object-cover border rounded"
+                />
+              </div>
+            )}
+          </Form.Item>
+
+          <Form.Item label="Note (Optional)" name="note">
+            <textarea
+              rows={3}
+              className="w-full border rounded px-3 py-2"
+              placeholder="Any remarks or extra info"
+            />
+          </Form.Item>
+
+          <Button
+            type="primary"
+            htmlType="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700"
+            loading={loading}
+          >
+            {loading ? "Submitting..." : "Submit Fund Request"}
+          </Button>
+        </Form>
       ) : (
-        <div className="text-center text-green-700 font-semibold mt-4">
-          ✅ Thank you! Your request has been submitted.
+        <div className="text-center text-green-600 font-medium text-lg mt-4">
+          ✅ Your fund request has been submitted.
           <br />
-          Verification will be completed within 12-24 hour.
+          Please wait while we verify the payment.
         </div>
       )}
     </div>
   );
 };
+
 export default AddFundPage;

@@ -20,7 +20,7 @@ import AddFundPage from '../profile/AddFundPage';
 const { TabPane } = Tabs;
 
 const DashboardCard = ({ icon, label, value, color }) => (
-  <div className="flex items-center p-4 space-x-4 shadow-md rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+  <div className="flex items-center p-4 space-x-4 shadow-md rounded-lg bg-gray-50  hover:bg-gray-100  transition">
     <div className={`p-3 rounded-full bg-${color}-100 text-${color}-700 text-xl`}>
       {icon}
     </div>
@@ -41,9 +41,10 @@ const PaymentPage = () => {
       setLoading(true);
       try {
         const res = await axiosInstance.get('/wallet/fund-requests');
+        console.log(res)
         setFundRequests({
-          pending: res.data.pending || [],
-          completed: res.data.completed || [],
+          pending: res.data.data.pending || [],
+          completed: res.data.data.completed || [],
         });
       } catch (error) {
         console.error("❌ Error loading fund requests:", error);

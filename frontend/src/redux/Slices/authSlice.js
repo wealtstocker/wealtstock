@@ -16,15 +16,15 @@ export const loginCustomer = createAsyncThunk(
     try {
       const response = await axiosInstance.post("/auth/login", credentials);
       console.log("response login ----", response);
-      Swal.fire({
-        toast: true,
-        position: "top-end",
-        icon: "success",
-        title: response.data.message || "Login successful",
-        showConfirmButton: false,
-        timer: 2000,
-        timerProgressBar: true,
-      });
+      // Swal.fire({
+      //   toast: true,
+      //   position: "top-end",
+      //   icon: "success",
+      //   title: response.data.message || "Login successful",
+      //   showConfirmButton: false,
+      //   timer: 2000,
+      //   timerProgressBar: true,
+      // });
       localStorage.setItem("token", response.data.token);
       return response.data;
     } catch (err) {

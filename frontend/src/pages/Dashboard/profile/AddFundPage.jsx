@@ -75,9 +75,9 @@ const AddFundPage = () => {
       </h2>
 
       <div className="text-center mb-6">
-        {config.data && config.data?.qr_image_url ? (
+        {config && config?.data?.qr_image_url ? (
           <img
-            src={config.data.qr_image_url}
+            src={config?.data.qr_image_url}
             alt="UPI QR Code"
             className="w-36 h-36 mx-auto object-contain border rounded"
           />

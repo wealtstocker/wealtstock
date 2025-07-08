@@ -83,9 +83,9 @@ const AddFund = ({ onClose }) => {
         <h2 className="text-xl font-bold text-red-600 mb-4 text-center">Pay-In</h2>
 
         <div className="text-center mb-6">
-          {config.data?.qr_image_url ? (
+          {config && config?.data?.qr_image_url ? (
             <img
-              src={config.data.qr_image_url}
+              src={config?.data.qr_image_url}
               alt="UPI QR Code"
                crossOrigin="anonymous"
               className="w-32 h-32 mx-auto object-contain border"
@@ -95,7 +95,7 @@ const AddFund = ({ onClose }) => {
           )}
 
           <p className="mt-2 text-sm">
-            UPI ID: <strong>{config.data?.upi_id || 'Not Available'}</strong>
+            UPI ID: <strong>{config && config.data?.upi_id || 'Not Available'}</strong>
           </p>
           <p className="text-xs text-gray-600">Scan the QR and make a payment.</p>
         </div>

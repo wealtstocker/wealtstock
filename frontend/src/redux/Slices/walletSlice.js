@@ -24,9 +24,9 @@ export const fetchAllWithdrawals = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await axiosInstance.get('/wallet/all-withdrawals');
-      console.log("-----------all-withdrawals----",res)
       return res.data.data;
     } catch (err) {
+      console.error(err)
       message.error(err.response?.data?.message || 'Failed to fetch withdrawals');
       return rejectWithValue(err.response?.data?.message || 'Fetch failed');
     }
@@ -102,7 +102,7 @@ export const requestWithdrawal = createAsyncThunk(
   async ({ amount, method }, { rejectWithValue }) => {
     try {
       const res = await axiosInstance.post("/wallet/withdraw", { amount, method });
-      console.log("---------------",res)
+
       message.success(res.data.message || "Withdrawal request submitted");
       return res.data.data;
     } catch (err) {

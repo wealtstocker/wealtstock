@@ -148,7 +148,7 @@ const walletSlice = createSlice({
       .addCase(fetchAllBalances.fulfilled, (state, action) => {
         state.loadingBalances = false;
         state.balances = action.payload;
-        state.balanceCount = action.payload.length;
+        state.balanceCount = action?.payload?.length;
       })
       .addCase(fetchAllBalances.rejected, (state, action) => {
         state.loadingBalances = false;

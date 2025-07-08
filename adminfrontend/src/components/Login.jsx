@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import gsap from "gsap";
-import Swal from "sweetalert2";
 
 import loginImg from "../assets/login.jpg";
 import { loginAdmin } from "../redux/Slices/authSlice";
@@ -60,7 +59,7 @@ const handleLogin = async () => {
 
   try {
     const res = await dispatch(loginAdmin({ email, password })).unwrap();
-    toast.success(res.message); 
+    toast.success(res.message || "Welcome Admin"); 
     localStorage.setItem("admin", JSON.stringify(res.user));
     // console.log("login",res)
     navigate("/admin/dashboard");

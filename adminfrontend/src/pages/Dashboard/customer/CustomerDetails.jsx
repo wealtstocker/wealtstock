@@ -267,6 +267,7 @@ const CustomerDetails = () => {
   if (!customer) {
     return <div className="text-center text-gray-500 py-10">Customer not found.</div>;
   }
+  console.log("cusot",customer)
 
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
@@ -335,6 +336,21 @@ const CustomerDetails = () => {
                     size="small"
                     icon={<CopyOutlined />}
                     onClick={() => handleCopy(customer.id, 'ID')}
+                  />
+                </Tooltip>
+              </div>
+            }
+          />
+          <InfoItem
+            label="Password"
+            value={
+              <div className="flex items-center gap-2">
+                <span className="text-red-600">{customer.password_hash}</span>
+                <Tooltip title="Copy password">
+                  <Button
+                    size="small"
+                    icon={<CopyOutlined />}
+                    onClick={() => handleCopy(customer.password_hash, 'password')}
                   />
                 </Tooltip>
               </div>

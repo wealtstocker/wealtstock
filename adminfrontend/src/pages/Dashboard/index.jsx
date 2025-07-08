@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Card,
   Typography,
@@ -46,13 +46,13 @@ const { Title, Text } = Typography;
 const AdminDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { balances,balanceCount, fundRequests, withdrawals, loadingBalances, loadingFundRequests, loadingWithdrawals } = useSelector((state) => state.wallet);
+  const { balances, balanceCount, fundRequests, withdrawals, loadingBalances, loadingFundRequests, loadingWithdrawals } = useSelector((state) => state.wallet);
   const { all: customers, loading: customerLoading } = useSelector((state) => state.customer);
   const { config: siteConfig, loading: siteConfigLoading } = useSelector((state) => state.siteConfig);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [filteredFundData, setFilteredFundData] = useState([]);
-  
+
   useEffect(() => {
     dispatch(fetchAllCustomers());
     dispatch(fetchAllBalances());
@@ -180,53 +180,67 @@ const AdminDashboard = () => {
       ) : (
         <>
 
-
           <Row gutter={[16, 16]} className="mb-6">
             <Col xs={24} sm={12} md={6}>
               <Card className="shadow-md hover:shadow-lg transition">
-                <div className="flex items-center gap-4">
-                  <UserOutlined className="!text-blue-600 text-2xl" />
-                  <div>
-                    <Text className="text-gray-500">Total Customers</Text>
-                    <Title level={4} className="!text-gray-800 m-0 ">{customers.length}</Title>
-                  </div>
-                </div>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={6}>
-              <Card className="shadow-md hover:shadow-lg transition">
-                <div className="flex items-center gap-4">
-                  <div className="rounded-b-full bg-gray-50 p-4">
+                <Link to={"/admin/customers"} title="Cutomers">
+                  <div className="flex items-center gap-4">
+                    <div className="rounded-b-full bg-gray-50 p-4">
 
-                    <ArrowDownOutlined className="!text-green-600 text-2xl" />
-                  </div>
-                  <div>
-                    <Text className="!text-gray-500">Fund Deposits</Text>
-                    <Title level={4} className="!text-gray-800 m-0">₹{totalRevenue.toLocaleString()}</Title>
-                  </div>
-                </div>
+                      <UserOutlined className="!text-blue-600 text-2xl" />
+                    </div>
+                    <div>
+                      <Text className="text-gray-500">Total Customers</Text>
+                      <Title level={4} className="!text-gray-800 m-0 ">{customers.length}</Title>
+                    </div>
+                  </div></Link>
               </Card>
             </Col>
             <Col xs={24} sm={12} md={6}>
               <Card className="shadow-md hover:shadow-lg transition">
-                <div className="flex items-center gap-4">
-                  <ArrowUpOutlined className="!text-red-600 text-2xl" />
-                  <div>
-                    <Text className="!text-gray-500">Withdrawals</Text>
-                    <Title level={4} className="!text-gray-800 m-0">₹{totalWithdrawals.toLocaleString()}</Title>
+                <Link to={"/admin/all-wallet"} title="all-wallet">
+
+                  <div className="flex items-center gap-4">
+                    <div className="rounded-b-full bg-gray-50 p-4">
+                      <ArrowDownOutlined className="!text-green-600 text-2xl" />
+                    </div>
+                    <div>
+                      <Text className="!text-gray-500">Fund Deposits</Text>
+                      <Title level={4} className="!text-gray-800 m-0">₹{totalRevenue.toLocaleString()}</Title>
+                    </div>
                   </div>
-                </div>
+                </Link>
               </Card>
             </Col>
             <Col xs={24} sm={12} md={6}>
               <Card className="shadow-md hover:shadow-lg transition">
-                <div className="flex items-center gap-4">
-                  <WalletOutlined className="!text-purple-600 text-2xl" />
-                  <div>
-                    <Text className="!text-gray-500">Wallets Active</Text>
-                    <Title level={4} className="!text-gray-800 m-0">{balances?.length || "not fetch"}</Title>
+                <Link to={"/admin/withdrawal"} title="All Withdrawal">
+                  <div className="flex items-center gap-4">
+                    <div className="rounded-b-full bg-gray-50 p-4">
+                      <ArrowUpOutlined className="!text-red-600 text-2xl" />
+                    </div>
+                    <div>
+                      <Text className="!text-gray-500">Withdrawals</Text>
+                      <Title level={4} className="!text-gray-800 m-0">₹{totalWithdrawals.toLocaleString()}</Title>
+                    </div>
                   </div>
-                </div>
+                </Link>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card className="shadow-md hover:shadow-lg transition">
+                <Link to={"/admin/all-wallet"} title="all-wallet">
+                  <div className="flex items-center gap-4">
+                    <div className="rounded-b-full bg-gray-50 p-4">
+
+                      <WalletOutlined className="!text-purple-600 text-2xl" />
+                    </div>
+                    <div>
+                      <Text className="!text-gray-500">Wallets Active</Text>
+                      <Title level={4} className="!text-gray-800 m-0">{balances?.length || "not fetch"}</Title>
+                    </div>
+                  </div>
+                </Link>
               </Card>
             </Col>
           </Row>

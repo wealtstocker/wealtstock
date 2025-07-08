@@ -30,7 +30,7 @@ const AdminLayout = () => {
           }`}
         >
           <main className="mt-3 min-h-screen">
-            <BreadcrumbNav />
+            {/* <BreadcrumbNav /> */}
             <Outlet />
           </main>
         </div>

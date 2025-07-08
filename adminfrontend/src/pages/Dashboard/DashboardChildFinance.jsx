@@ -7,6 +7,7 @@ import { fetchAllCustomers } from "../../redux/Slices/customerSlice";
 import { fetchFundRequests } from "../../redux/Slices/fundSlice";
 import { fetchAllBalances } from "../../redux/Slices/balanceSlice";
 import { fetchAllWithdrawals } from "../../redux/Slices/withdrawalSlice";
+import { Link } from "react-router-dom";
 
 const DashboardChildFinance = () => {
   const sectionRef = useRef(null);
@@ -47,10 +48,10 @@ const DashboardChildFinance = () => {
     const successFunds = enriched.filter((item) => item.status === "successful");
     const searched = search
       ? successFunds.filter(
-          (item) =>
-            item.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-            item.email?.toLowerCase().includes(search.toLowerCase())
-        )
+        (item) =>
+          item.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+          item.email?.toLowerCase().includes(search.toLowerCase())
+      )
       : successFunds;
 
     setFilteredFundData(searched);
@@ -65,34 +66,42 @@ const DashboardChildFinance = () => {
     <div ref={sectionRef} className="space-y-6">
       {/* Quick Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-4 rounded-xl shadow-md flex items-center gap-4">
-          <FaMoneyCheckAlt className="text-blue-600 text-2xl" />
-          <div>
-            <p className="text-gray-500 text-sm">Total Fund Requests</p>
-            <h3 className="text-lg font-semibold">{fundRequests.length}</h3>
+        <Link to={"/admin/all-wallet"} title="All wallet">
+          <div className="bg-white p-4 rounded-xl shadow-md flex items-center gap-4">
+            <FaMoneyCheckAlt className="text-blue-600 text-2xl" />
+            <div>
+              <p className="text-gray-500 text-sm">Total Fund Requests</p>
+              <h3 className="text-lg font-semibold">{fundRequests.length}</h3>
+            </div>
           </div>
-        </div>
-        <div className="bg-white p-4 rounded-xl shadow-md flex items-center gap-4">
-          <FaArrowUp className="text-green-600 text-2xl" />
-          <div>
-            <p className="text-gray-500 text-sm">Completed Withdrawals</p>
-            <h3 className="text-lg font-semibold">{completedWithdrawals.length}</h3>
+        </Link>
+        <Link to={"/admin/withdrawal"} title="All Withdrawal">
+          <div className="bg-white p-4 rounded-xl shadow-md flex items-center gap-4">
+            <FaArrowUp className="text-green-600 text-2xl" />
+            <div>
+              <p className="text-gray-500 text-sm">Completed Withdrawals</p>
+              <h3 className="text-lg font-semibold">{completedWithdrawals.length}</h3>
+            </div>
           </div>
-        </div>
-        <div className="bg-white p-4 rounded-xl shadow-md flex items-center gap-4">
-          <FaArrowDown className="text-yellow-500 text-2xl" />
-          <div>
-            <p className="text-gray-500 text-sm">Pending Withdrawals</p>
-            <h3 className="text-lg font-semibold">{pendingWithdrawals.length}</h3>
+        </Link>
+        <Link to={"/admin/withdrawal"} title="All Withdrawal">
+          <div className="bg-white p-4 rounded-xl shadow-md flex items-center gap-4">
+            <FaArrowDown className="text-yellow-500 text-2xl" />
+            <div>
+              <p className="text-gray-500 text-sm">Pending Withdrawals</p>
+              <h3 className="text-lg font-semibold">{pendingWithdrawals.length}</h3>
+            </div>
           </div>
-        </div>
-        <div className="bg-white p-4 rounded-xl shadow-md flex items-center gap-4">
-          <FaArrowUp className="text-red-500 rotate-180 text-2xl" />
-          <div>
-            <p className="text-gray-500 text-sm">Rejected Withdrawals</p>
-            <h3 className="text-lg font-semibold">{rejectedWithdrawals.length}</h3>
+        </Link>
+        <Link to={"/admin/withdrawal"} title="All Withdrawal">
+          <div className="bg-white p-4 rounded-xl shadow-md flex items-center gap-4">
+            <FaArrowUp className="text-red-500 rotate-180 text-2xl" />
+            <div>
+              <p className="text-gray-500 text-sm">Rejected Withdrawals</p>
+              <h3 className="text-lg font-semibold">{rejectedWithdrawals.length}</h3>
+            </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Recent Fund Deposits & Withdrawals */}
@@ -114,9 +123,12 @@ const DashboardChildFinance = () => {
 
         {/* Completed Withdrawals */}
         <div className="bg-white p-4 rounded-xl shadow">
-          <div className="flex items-center gap-2 text-red-600 mb-2 font-semibold">
-            <FaArrowUp /> Recent Withdrawals
-          </div>
+          <Link to={"/admin/withdrawal"} title="All Withdrawal">
+            <div className="flex items-center gap-2 text-red-600 hover:border-b border-blue-400 mb-2 font-semibold">
+              <FaArrowUp /> Recent Withdrawals
+            </div>
+          </Link>
+
           <ul className="text-sm space-y-2">
             {completedWithdrawals.slice(0, 5).map((w, i) => (
               <li key={w.withdrawal_id || i} className="flex justify-between text-gray-700 border-gray-400  border-b pb-2 last:border-none">
@@ -126,20 +138,22 @@ const DashboardChildFinance = () => {
             ))}
           </ul>
         </div>
-      {/* New Customers List */}
-      <div className="bg-white p-4 rounded-xl shadow">
-        <div className="flex items-center gap-2 text-purple-600 mb-2 font-semibold">
-          <FaUserPlus /> New Customers
+        {/* New Customers List */}
+        <div className="bg-white p-4 rounded-xl shadow">
+          <div className="flex items-center gap-2 text-purple-600 mb-2 font-semibold">
+            <FaUserPlus /> New Customers
+          </div>
+          <ul className="text-sm space-y-2">
+            {customers.slice(0, 5).map((c) => (
+              <li key={c.id} className="border-b pb-2 last:border-none" >
+                <Link to={`/admin/customer/${c.id}`}>
+                  <p className="font-medium">{c.full_name}</p>
+                  <p className="text-gray-500 text-xs">{c.id}</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
-        <ul className="text-sm space-y-2">
-          {customers.slice(0, 5).map((c) => (
-            <li key={c.id} className="border-b pb-2 last:border-none"  onClick={() => navigate(`/admin/customer/${c.id}`)}>
-              <p className="font-medium">{c.full_name}</p>
-              <p className="text-gray-500 text-xs">{c.email}</p>
-            </li>
-          ))}
-        </ul>
-      </div>
       </div>
 
     </div>

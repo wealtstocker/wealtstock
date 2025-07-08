@@ -1,9 +1,4 @@
 import pool from "../config/db.js";
-import path from "path";
-import fs from "fs";
-
-// ✅ Sanitize file names
-const sanitizeFileName = (filename) => filename.replace(/\s+/g, "_");
 
 // ✅ Convert uploaded file to full URL
 const getFileUrl = (req, field) => {

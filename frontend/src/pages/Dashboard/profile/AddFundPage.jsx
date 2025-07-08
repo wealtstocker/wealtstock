@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axiosInstance from '../../../api/axiosInstance';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSiteConfig } from '../../../redux/Slices/siteConfigSlice';
-import { Upload, Form, Button, Tooltip, Modal } from 'antd';
+import { Upload, Form, Button, Tooltip, Modal, Input } from 'antd';
 import { UploadOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import toast from '../../Services/toast';
 
@@ -56,7 +56,7 @@ const AddFundPage = () => {
 
       Modal.success({
         title: "Payment Submitted",
-        content: "Thank you! Your request will be verified within 12–24 hours.",
+        content: "✅ Thank you! Your request will be verified within 12–24 hours.",
         centered: true,
       });
 
@@ -69,11 +69,13 @@ const AddFundPage = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white shadow-lg rounded-lg mt-6">
-      <h2 className="text-2xl font-semibold text-blue-700 mb-4 border-b pb-2">💰 Fund Deposit (Pay-In)</h2>
+    <div className="max-w-3xl mx-auto p-6 bg-white shadow-md rounded-lg mt-6">
+      <h2 className="text-2xl font-semibold text-blue-700 mb-4 border-b pb-2">
+        💰 Fund Deposit (Pay-In)
+      </h2>
 
       <div className="text-center mb-6">
-        {config.data?.qr_image_url ? (
+        {config.data && config.data?.qr_image_url ? (
           <img
             src={config.data.qr_image_url}
             alt="UPI QR Code"
@@ -89,12 +91,7 @@ const AddFundPage = () => {
       </div>
 
       {!submitted ? (
-        <Form
-          layout="vertical"
-          form={form}
-          onFinish={handleSubmit}
-          className="space-y-2"
-        >
+        <Form layout="vertical" form={form} onFinish={handleSubmit}>
           <Form.Item
             label="Amount (₹)"
             name="amount"
@@ -108,11 +105,7 @@ const AddFundPage = () => {
               },
             ]}
           >
-            <input
-              type="number"
-              className="w-full border rounded px-3 py-2"
-              placeholder="Enter deposit amount"
-            />
+            <Input type="number" placeholder="Enter deposit amount" />
           </Form.Item>
 
           <Form.Item
@@ -127,11 +120,7 @@ const AddFundPage = () => {
             name="utr"
             rules={[{ required: true, message: "UTR/Ref number is required" }]}
           >
-            <input
-              type="text"
-              className="w-full border rounded px-3 py-2"
-              placeholder="Enter UPI Ref. Number"
-            />
+            <Input placeholder="Enter UPI Ref. Number" />
           </Form.Item>
 
           <Form.Item
@@ -145,13 +134,13 @@ const AddFundPage = () => {
               beforeUpload={handleScreenshotUpload}
               maxCount={1}
             >
-              <Button icon={<UploadOutlined />}>Click to Upload Screenshot</Button>
+              <Button icon={<UploadOutlined />}>Upload Screenshot</Button>
             </Upload>
             {previewURL && (
               <div className="mt-2">
                 <img
                   src={previewURL}
-                  alt="Preview"
+                  alt="Screenshot Preview"
                   className="w-28 h-28 object-cover border rounded"
                 />
               </div>
@@ -159,11 +148,7 @@ const AddFundPage = () => {
           </Form.Item>
 
           <Form.Item label="Note (Optional)" name="note">
-            <textarea
-              rows={3}
-              className="w-full border rounded px-3 py-2"
-              placeholder="Any remarks or extra info"
-            />
+            <Input.TextArea rows={3} placeholder="Any remarks or extra info" />
           </Form.Item>
 
           <Button
@@ -176,9 +161,8 @@ const AddFundPage = () => {
           </Button>
         </Form>
       ) : (
-        <div className="text-center text-green-600 font-medium text-lg mt-4">
-          ✅ Your fund request has been submitted.
-          <br />
+        <div className="text-center text-green-600 font-medium text-lg mt-6">
+          ✅ Your fund request has been submitted.<br />
           Please wait while we verify the payment.
         </div>
       )}

@@ -27,11 +27,10 @@ import { getUploadMiddleware } from "../utils/upload.js";
 const router = express.Router();
 const screenshotUpload = getUploadMiddleware("screenshots");
 
-// Customer Routes
 router.post(
   "/fund-request",
   authenticate,
-  screenshotUpload.single("screenshot"),
+  screenshotUpload.fields([{ name: "screenshot", maxCount: 1 }]),
   addFundRequest
 );
 router.get("/fund-requests", authenticate, getMyFundRequests);

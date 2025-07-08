@@ -35,6 +35,7 @@ import {
   Modal,
   Alert,
   Tooltip,
+  Image,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -269,19 +270,20 @@ const CustomerDetails = () => {
 
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+      <div className="flex justify-end  gap-3">
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
+          Back
+        </Button>
+
+      </div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
-            Back
-          </Button>
-          <h2 className="text-2xl md:text-3xl font-bold text-indigo-700">
-            👤 {customer.full_name}'s Profile
-            <span className="ml-2 text-sm text-gray-500">
-              ({customerFundRequests.filter(fr => fr.status === 'pending').length} pending fund requests, {customerWithdrawals.filter(wd => wd.status === 'requested').length} pending withdrawals)
-            </span>
-          </h2>
-        </div>
-        <div className="flex flex-wrap gap-2">
+        <h2 className="text-2xl md:text-3xl font-bold text-indigo-700">
+          👤 {customer.full_name}'s Profile
+          <span className="ml-2 text-sm text-gray-500">
+            ({customerFundRequests.filter(fr => fr.status === 'pending').length} pending fund requests, {customerWithdrawals.filter(wd => wd.status === 'requested').length} pending withdrawals)
+          </span>
+        </h2>
+        <div className="flex flex-wrap gap-4">
           <Button
             type="primary"
             icon={<DollarOutlined />}
@@ -307,14 +309,14 @@ const CustomerDetails = () => {
               Activate
             </Button>
           )}
-          <Button
+          {/* <Button
             type="default"
             danger
             icon={<DeleteOutlined />}
             onClick={handleDeleteCustomer}
           >
             Delete Permanently
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -489,13 +491,20 @@ const CustomerDetails = () => {
               { title: 'Method', dataIndex: 'method' },
               { title: 'UTR Number', dataIndex: 'utr_number' },
               {
-                title: 'Screenshot',
-                dataIndex: 'screenshot',
-                render: (url) => url ? (
-                  <a href={`${import.meta.env.VITE_BASE_URL}/${url.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                    View
-                  </a>
-                ) : 'N/A',
+                title: "Screenshot",
+                dataIndex: "screenshot",
+                render: (src) =>
+                  src ? (
+                    <Image
+                      src={src}
+                      alt="Payment Screenshot"
+                      width={60}
+                      height={60}
+                      style={{ objectFit: "cover", borderRadius: 8, maxWidth: "95%" }}
+                    />
+                  ) : (
+                    "N/A"
+                  ),
               },
               { title: 'Note', dataIndex: 'note' },
               {

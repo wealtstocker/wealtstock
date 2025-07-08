@@ -46,13 +46,13 @@ const { Title, Text } = Typography;
 const AdminDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { balances, fundRequests, withdrawals, loadingBalances, loadingFundRequests, loadingWithdrawals } = useSelector((state) => state.wallet);
+  const { balances,balanceCount, fundRequests, withdrawals, loadingBalances, loadingFundRequests, loadingWithdrawals } = useSelector((state) => state.wallet);
   const { all: customers, loading: customerLoading } = useSelector((state) => state.customer);
   const { config: siteConfig, loading: siteConfigLoading } = useSelector((state) => state.siteConfig);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [filteredFundData, setFilteredFundData] = useState([]);
-console.log("b-----------------",balances)
+  
   useEffect(() => {
     dispatch(fetchAllCustomers());
     dispatch(fetchAllBalances());
@@ -98,7 +98,7 @@ console.log("b-----------------",balances)
       key: "full_name",
       render: (text, record) => (
         <a onClick={() => navigate(`/admin/customer/${record.customer_id}`)} className="text-indigo-800 flex-row hover:underline">
-         <div className="cursor-pointer text-gray-800"> {text}</div>
+          <div className="cursor-pointer text-gray-800"> {text}</div>
           {record.customer_id}
         </a>
       ),
@@ -116,12 +116,12 @@ console.log("b-----------------",balances)
       key: "amount",
       render: (amount) => <span className="text-green-600 font-semibold">₹{Number(amount).toFixed(2)}</span>,
     },
-   
+
     {
       title: "Date",
       dataIndex: "created_at",
       key: "created_at",
-       responsive: ["md"],
+      responsive: ["md"],
       render: (date) => (
         <span className="text-gray-600 text-sm">{moment(date).format("DD MMM YYYY, h:mm A")}</span>
       ),
@@ -132,9 +132,8 @@ console.log("b-----------------",balances)
       key: "status",
       render: (status) => (
         <span
-          className={`text-xs font-semibold px-2 py-1 rounded-full ${
-            status === "successful" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-800"
-          }`}
+          className={`text-xs font-semibold px-2 py-1 rounded-full ${status === "successful" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-800"
+            }`}
         >
           {status}
         </span>
@@ -146,26 +145,26 @@ console.log("b-----------------",balances)
       key: "utr_number",
       render: (utr) => <span className="text-xs text-gray-700">{utr || "N/A"}</span>,
     },
-    
-    // {
-    //   title: "Screenshot",
-    //   dataIndex: "screenshot",
-    //   key: "screenshot",
-    //   responsive: ["md"],
-    //   render: (src) =>
-    //     src ? (
-    //       <Image
-    //         width={60}
-    //         height={60}
-    //         style={{ objectFit: "cover", borderRadius: 6 }}
-    //         src={siteConfig?.PUBLIC_UPLOADS_URL ? `${siteConfig.PUBLIC_UPLOADS_URL}/site/${src}` : `/uploads/site/${src}`}
-    //         alt="screenshot"
-    //         preview={{ mask: "Click to Preview" }}
-    //       />
-    //     ) : (
-    //       <span className="text-gray-400 text-xs">N/A</span>
-    //     ),
-    // },
+
+    {
+      title: "Screenshot",
+      dataIndex: "screenshot",
+      key: "screenshot",
+      responsive: ["md"],
+      render: (src) =>
+        src ? (
+          <Image
+            width={60}
+            height={60}
+            style={{ objectFit: "cover", borderRadius: 6 }}
+            src={src}
+            alt="screenshot"
+            preview={{ mask: "Click to Preview" }}
+          />
+        ) : (
+          <span className="text-gray-400 text-xs">N/A</span>
+        ),
+    },
   ];
 
   return (
@@ -180,7 +179,7 @@ console.log("b-----------------",balances)
         </div>
       ) : (
         <>
-         
+
 
           <Row gutter={[16, 16]} className="mb-6">
             <Col xs={24} sm={12} md={6}>
@@ -199,7 +198,7 @@ console.log("b-----------------",balances)
                 <div className="flex items-center gap-4">
                   <div className="rounded-b-full bg-gray-50 p-4">
 
-                  <ArrowDownOutlined className="!text-green-600 text-2xl" />
+                    <ArrowDownOutlined className="!text-green-600 text-2xl" />
                   </div>
                   <div>
                     <Text className="!text-gray-500">Fund Deposits</Text>
@@ -225,7 +224,7 @@ console.log("b-----------------",balances)
                   <WalletOutlined className="!text-purple-600 text-2xl" />
                   <div>
                     <Text className="!text-gray-500">Wallets Active</Text>
-                    <Title level={4} className="!text-gray-800 m-0">{balances?.length}</Title>
+                    <Title level={4} className="!text-gray-800 m-0">{balances?.length || "not fetch"}</Title>
                   </div>
                 </div>
               </Card>
@@ -278,22 +277,22 @@ console.log("b-----------------",balances)
             />
           </Card>
           <div className="saturate-100 shadow-2xl ">
-             {siteConfig && (
-            <Card className="mb-6 shadow-md">
-              <Text strong>Fund Deposit Instructions</Text>
-              <Divider />
-              <p>Send funds to: <strong>{siteConfig.upi_id || "Not set"}</strong></p>
-              {siteConfig.qr_image_url && (
-                <Image
-                  src={siteConfig.qr_image_url}
-                  alt="UPI QR Code"
-                  width={100}
-                  height={100}
-                  className="mt-2"
-                />
-              )}
-            </Card>
-          )}
+            {siteConfig && (
+              <Card className="mb-6 shadow-md">
+                <Text strong>Fund Deposit Instructions</Text>
+                <Divider />
+                <p>Send funds to: <strong>{siteConfig.upi_id || "Not set"}</strong></p>
+                {siteConfig.qr_image_url && (
+                  <Image
+                    src={siteConfig.qr_image_url}
+                    alt="UPI QR Code"
+                    width={100}
+                    height={100}
+                    className="mt-2"
+                  />
+                )}
+              </Card>
+            )}
           </div>
         </>
       )}

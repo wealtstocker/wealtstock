@@ -1,18 +1,20 @@
-import path from "path";
-import fs from "fs";
 import pool from "../config/db.js";
 
 const getFileUrl = (req, field) => {
   return req.files?.[field]?.[0]?.path || null;
 };
+
 export async function addFundRequest(req, res) {
   const customerId = req.user.id;
   const { amount, method, utr_number, note } = req.body;
 
-   const screenshot = getFileUrl(req, "screenshot");
+  const screenshot = getFileUrl(req, "screenshot"); // ✅ Cloudinary URL here
 
   if (!amount || isNaN(amount) || amount <= 0 || !utr_number) {
-    return res.status(400).json({ message: "Amount and UTR number are required", error: "Invalid input" });
+    return res.status(400).json({
+      message: "Amount and UTR number are required",
+      error: "Invalid input",
+    });
   }
 
   try {
@@ -29,9 +31,13 @@ export async function addFundRequest(req, res) {
     });
   } catch (error) {
     console.error("Add Fund Error:", error.message);
-    return res.status(500).json({ message: "Failed to submit fund request", error: error.message });
+    return res.status(500).json({
+      message: "Failed to submit fund request",
+      error: error.message,
+    });
   }
 }
+
 
 export async function getMyFundRequests(req, res) {
   const customerId = req.user.id;
@@ -269,7 +275,9 @@ export async function getApprovedFundRequests(req, res) {
 
 export async function approveFundRequest(req, res) {
   const { requestId } = req.params;
+  const { amount: overrideAmount } = req.body;
   const connection = await pool.getConnection();
+
   try {
     await connection.beginTransaction();
 
@@ -277,17 +285,19 @@ export async function approveFundRequest(req, res) {
       "SELECT * FROM add_funds WHERE id = ? FOR UPDATE",
       [requestId]
     );
+
     if (!fund) {
       await connection.rollback();
       return res.status(404).json({ message: "Fund request not found", error: "Invalid request ID" });
     }
+
     if (fund.status !== "pending") {
       await connection.rollback();
       return res.status(400).json({ message: "Fund request already processed", error: "Invalid status" });
     }
 
     const customerId = fund.customer_id;
-    const amount = Number(fund.amount);
+    const approvedAmount = Number(overrideAmount || fund.amount); // ✅ use overridden amount if provided
 
     const [[lastWallet]] = await connection.query(
       "SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE",
@@ -295,29 +305,34 @@ export async function approveFundRequest(req, res) {
     );
 
     const previousBalance = Number(lastWallet?.balance || 0);
-    const newBalance = Math.round((previousBalance + amount) * 100) / 100;
+    const newBalance = Math.round((previousBalance + approvedAmount) * 100) / 100;
 
     const [txResult] = await connection.query(
       `INSERT INTO transactions (customer_id, type, amount, description, status)
        VALUES (?, 'credit', ?, 'Fund request approved', 'completed')`,
-      [customerId, amount]
+      [customerId, approvedAmount]
     );
 
     await connection.query(
       `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
        VALUES (?, ?, 'credit', ?, ?)`,
-      [customerId, amount, newBalance, txResult.insertId]
+      [customerId, approvedAmount, newBalance, txResult.insertId]
     );
 
     await connection.query(
-      "UPDATE add_funds SET status = 'successful', updated_at = NOW() WHERE id = ?",
-      [requestId]
+      "UPDATE add_funds SET status = 'successful', amount = ?, updated_at = NOW() WHERE id = ?",
+      [approvedAmount, requestId]
     );
 
     await connection.commit();
+
     return res.status(200).json({
       message: "Fund request approved and wallet updated",
-      data: { amount, new_balance: newBalance, transaction_id: txResult.insertId },
+      data: {
+        approved_amount: approvedAmount,
+        new_balance: newBalance,
+        transaction_id: txResult.insertId,
+      },
     });
   } catch (err) {
     await connection.rollback();
@@ -327,6 +342,7 @@ export async function approveFundRequest(req, res) {
     connection.release();
   }
 }
+
 
 export async function rejectFundRequest(req, res) {
   const { requestId } = req.params;

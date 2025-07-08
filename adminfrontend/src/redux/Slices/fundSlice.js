@@ -1,23 +1,31 @@
+// ✅ fundSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axiosInstance from '../../lib/axiosInstance';
 
-// ✅ Fetch all fund requests for admin
+// Fetch all fund requests
 export const fetchFundRequests = createAsyncThunk(
   'fund/fetchAll',
   async () => {
     const res = await axiosInstance.get('/wallet/admin/fund-requests');
-    // console.log("-----",res)
     return res.data.data;
   }
 );
 
-// ✅ Approve a fund request
+// Approve a fund request
 export const approveFundRequest = createAsyncThunk(
   'fund/approve',
-  async (requestId) => {
-    const res = await axiosInstance.post(`/wallet/approve-fund-request/${requestId}`);
-    console.log(res)
+  async ({ requestId, amount }) => {
+    const res = await axiosInstance.post(`/wallet/approve-fund-request/${requestId}`, { amount });
     return { ...res.data, requestId };
+  }
+);
+
+// Reject a fund request
+export const rejectFundRequest = createAsyncThunk(
+  'fund/reject',
+  async (requestId) => {
+    const res = await axiosInstance.post(`/wallet/reject-fund-request/${requestId}`);
+    return { requestId };
   }
 );
 
@@ -28,7 +36,18 @@ const fundSlice = createSlice({
     loading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    setFundRequestApproved: (state, action) => {
+      state.fundRequests = state.fundRequests.map((req) =>
+        req.id === action.payload ? { ...req, status: 'successful' } : req
+      );
+    },
+    setFundRequestRejected: (state, action) => {
+      state.fundRequests = state.fundRequests.map((req) =>
+        req.id === action.payload ? { ...req, status: 'rejected' } : req
+      );
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchFundRequests.pending, (state) => {
@@ -43,14 +62,17 @@ const fundSlice = createSlice({
         state.error = action.error.message;
       })
       .addCase(approveFundRequest.fulfilled, (state, action) => {
-        const updatedList = state.fundRequests.map((req) =>
-          req.id === action.payload.requestId
-            ? { ...req, status: 'successful' }
-            : req
+        state.fundRequests = state.fundRequests.map((req) =>
+          req.id === action.payload.requestId ? { ...req, status: 'successful' } : req
         );
-        state.fundRequests = updatedList;
+      })
+      .addCase(rejectFundRequest.fulfilled, (state, action) => {
+        state.fundRequests = state.fundRequests.map((req) =>
+          req.id === action.payload.requestId ? { ...req, status: 'rejected' } : req
+        );
       });
   },
 });
 
+export const { setFundRequestApproved, setFundRequestRejected } = fundSlice.actions;
 export default fundSlice.reducer;

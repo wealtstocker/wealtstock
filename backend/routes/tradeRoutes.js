@@ -28,7 +28,7 @@ router.get("/my", authenticate, getMyTrades);
 router.get("/my/transactions", authenticate, getMyTransactions);
 
 // Get trade by ID (admin-only)
-router.get("/:id", authenticate, authorizeRoles("admin", "superadmin"), getTradeById);
+router.get("/:id", authenticate,  getTradeById);
 
 // Update trade (admin-only)
 router.put("/:id", authenticate, authorizeRoles("admin", "superadmin"), updateTrade);
@@ -36,10 +36,7 @@ router.put("/:id", authenticate, authorizeRoles("admin", "superadmin"), updateTr
 // Delete trade (admin-only)
 router.delete("/:id", authenticate, authorizeRoles("admin", "superadmin"), deleteTrade);
 
-// Approve trade (admin-only)
 router.put("/approve/:id", authenticate, authorizeRoles("admin", "superadmin"), approveTrade);
-
-// Deactivate trade (admin-only)
 router.put("/deactivate/:id", authenticate, authorizeRoles("admin", "superadmin"), deactivateTrade);
 
 export default router;

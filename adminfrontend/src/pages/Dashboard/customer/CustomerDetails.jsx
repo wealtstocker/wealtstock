@@ -391,7 +391,7 @@ const CustomerDetails = () => {
             pagination={{ pageSize: 5 }}
             columns={[
               { title: 'Trade No', dataIndex: 'trade_number' },
-              { title: 'Stock Name', dataIndex: 'instrument' },
+              { title: 'Stock Name', dataIndex: 'stock_name' },
               {
                 title: 'Buy',
                 render: (trade) => `${trade.buy_quantity} @ ₹${trade.buy_price}`,

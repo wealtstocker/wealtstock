@@ -27,6 +27,7 @@ import SettingsPage from "./pages/Dashboard/profile/SettingsPage";
 import PaymentPage from "./pages/Dashboard/Payment/Payment";
 import TradeListPage from "./pages/Dashboard/trade/TradeListPage";
 import TradeDetailPage from "./pages/Dashboard/trade/TradeDetailPage";
+import RequestTradePage from "./pages/Dashboard/trade/RequestTradePage";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +54,7 @@ function App() {
             <Route path="profile" element={<ProfilePage />} />
             <Route path="trade/markets" element={<MarketPage />} />
             <Route path="trade/position" element={<TradeReportPage />} />
+            <Route path="trade/request" element={<RequestTradePage />} />
             <Route path="trades" element={<TradeListPage />} />
             <Route path="trade/:id" element={<TradeDetailPage />} />
             <Route path="bank" element={<BankDetailsPage />} />

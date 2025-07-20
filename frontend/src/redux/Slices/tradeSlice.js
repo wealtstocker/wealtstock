@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axiosInstance from '../../api/axiosInstance';
+import { message } from 'antd';
 
 export const fetchAllTrades = createAsyncThunk(
   'trade/fetchAll',
@@ -21,11 +22,11 @@ export const fetchAllTrades = createAsyncThunk(
 
 export const fetchSingleTrade = createAsyncThunk(
   'trade/fetchOne',
-  async ({ id, navigate }, { rejectWithValue }) => {
+  async ({ idobin, navigate }, { rejectWithValue }) => {
     try {
       const res = await axiosInstance.get(`/trade/${id}`);
       console.log('fetchSingleTrade Response:', res);
-      return res.data;
+      return res.data.trade;
     } catch (err) {
       console.error('fetchSingleTrade Error:', err);
       if (err.response?.status === 403) {
@@ -33,6 +34,24 @@ export const fetchSingleTrade = createAsyncThunk(
         navigate('/login');
       }
       return rejectWithValue(err.response?.data?.message || 'Failed to fetch trade');
+    }
+  }
+);
+
+export const createTrade = createAsyncThunk(
+  'trade/create',
+  async ({ tradeData, navigate }, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.post('/trade', tradeData);
+      console.log('createTrade Response:', res);
+      return res.data;
+    } catch (err) {
+      console.error('createTrade Error:', err);
+      if (err.response?.status === 403) {
+        message.error('Unauthorized access. Redirecting to login.');
+        navigate('/login');
+      }
+      return rejectWithValue(err.response?.data?.message || 'Failed to create trade');
     }
   }
 );
@@ -68,6 +87,18 @@ const tradeSlice = createSlice({
         state.single = action.payload;
       })
       .addCase(fetchSingleTrade.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(createTrade.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createTrade.fulfilled, (state, action) => {
+        state.loading = false;
+        state.all = [...state.all, action.payload.trade];
+      })
+      .addCase(createTrade.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

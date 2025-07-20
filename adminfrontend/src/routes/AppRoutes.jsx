@@ -25,7 +25,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<LoginPage />} />
-      <Route path="/admin/reg" element={<AdminRegisterPage />} />
+      <Route path="/register" element={<AdminRegisterPage />} />
 
       {/* Admin Protected Routes */}
       <Route path="/admin" element={<AdminLayout />}>

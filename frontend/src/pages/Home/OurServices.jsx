@@ -19,7 +19,7 @@ const services = [
   {
     title: "Equity Derivatives",
     description:
-      "A financial instrument whose value is based on equity movements of the underlying assets.",
+      "A financial stock_name whose value is based on equity movements of the underlying assets.",
     icon: <FaChartLine className="text-4xl text-green-600" />,
   },
   {

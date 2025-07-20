@@ -198,7 +198,7 @@ const TradeDetails = () => {
             </span>
           }
         />
-        <InfoItem label="Instrument" value={trade.instrument} />
+        <InfoItem label="stock_name" value={trade.stock_name} />
         <InfoItem label="Status" value={<StatusTag status={trade.status} />} />
         <InfoItem label="Current Balance" value={`₹${getCustomerBalance(trade.customer_id)}`} />
         <InfoItem label="Created By" value={trade.created_by} />

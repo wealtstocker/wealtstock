@@ -80,7 +80,7 @@ console.log("tra", trades)
         </div>
       ),
     },
-    { title: 'Stock Name', dataIndex: 'instrument', key: 'instrument' },
+    { title: 'Stock Name', dataIndex: 'stock_name', key: 'stock_name' },
     {
       title: 'Status',
       dataIndex: 'status',
@@ -157,7 +157,7 @@ console.log("tra", trades)
       'Trade No': item.trade_number,
       Customer: getCustomerName(item.customer_id),
       'Customer ID': item.customer_id,
-      Instrument: item.instrument,
+      stock_name: item.stock_name,
       Status: item.status,
       'P/L': item.profit_loss,
       'P/L Value': item.profit_loss_value,

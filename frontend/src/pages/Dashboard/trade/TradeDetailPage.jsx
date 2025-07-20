@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSingleTrade } from '../../../redux/Slices/tradeSlice';
 import dayjs from 'dayjs';
@@ -8,10 +8,15 @@ const TradeDetailPage = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const { single, loading } = useSelector((state) => state.trade);
-
+const navigate = useNavigate()
+  console.log(id)
   useEffect(() => {
-    dispatch(fetchSingleTrade(id));
-  }, [dispatch, id]);
+    
+    if(id){
+      console.log(id)
+      dispatch(fetchSingleTrade({id, navigate}));
+    }
+  }, [dispatch, id,navigate]);
 
   if (loading || !single) return <div className="p-6">Loading trade...</div>;
 
@@ -24,7 +29,7 @@ const TradeDetailPage = () => {
 
       <div className="grid md:grid-cols-2 gap-4 text-sm">
         <InfoItem label="Customer ID" value={single.customer_id} />
-        <InfoItem label="Instrument" value={single.instrument} />
+        <InfoItem label="Stock Name" value={single.stock_name} />
         <InfoItem label="Status" value={single.status} />
         <InfoItem label="Created By" value={single.created_by} />
         <InfoItem label="Trade Date" value={formatDate(single.created_at)} />

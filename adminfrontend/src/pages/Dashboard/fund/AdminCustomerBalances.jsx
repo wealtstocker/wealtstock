@@ -180,10 +180,18 @@ const AdminCustomerBalances = () => {
   };
 
   const balanceColumns = [
-    {
+   {
       title: 'Customer ID',
       dataIndex: 'customer_id',
       sorter: (a, b) => a.customer_id.localeCompare(b.customer_id),
+      render: (text, record) => (
+        <span
+          onClick={() => navigate(`/admin/customer/${record.customer_id}`)}
+          className="text-blue-600 underline cursor-pointer"
+        >
+          {record.customer_id}
+        </span>
+      ),
     },
     {
       title: 'Full Name',
@@ -366,9 +374,9 @@ const AdminCustomerBalances = () => {
               rowKey="customer_id"
               pagination={{ pageSize: 10 }}
               rowClassName="cursor-pointer hover:bg-gray-50"
-              onRow={(record) => ({
-                onClick: () => navigate(`/admin/customer/${record.customer_id}`),
-              })}
+              // onRow={(record) => ({
+              //   onClick: () => navigate(`/admin/customer/${record.customer_id}`),
+              // })}
               scroll={{ x: 'max-content' }}
             />
           </TabPane>

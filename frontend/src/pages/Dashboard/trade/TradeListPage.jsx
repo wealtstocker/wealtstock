@@ -10,17 +10,17 @@ const TradeListPage = () => {
   const navigate = useNavigate();
   const { all, loading } = useSelector((state) => state.trade);
   const [searchText, setSearchText] = useState('');
-console.log(all)
+
   useEffect(() => {
     dispatch(fetchAllTrades({ navigate }));
   }, [dispatch, navigate]);
 
   const filteredData = useMemo(() => {
-    const trades = all;
+    const trades = Array.isArray(all) ? all : all?.trades || [];
     return trades.filter((trade) =>
       trade.trade_number?.toLowerCase().includes(searchText.toLowerCase())
     );
-  }, [all?.trades, searchText]);
+  }, [all, searchText]);
 
   const columns = [
     {
@@ -28,19 +28,17 @@ console.log(all)
       dataIndex: 'trade_number',
       key: 'trade_number',
       sorter: (a, b) => a.trade_number?.localeCompare(b.trade_number),
-      fixed: 'left',
+     
     },
     {
       title: 'Buy Price',
       dataIndex: 'buy_price',
       key: 'buy_price',
-    
     },
     {
       title: 'Buy Qty',
       dataIndex: 'buy_quantity',
       key: 'buy_quantity',
-    
     },
     {
       title: 'Buy Value',
@@ -96,7 +94,7 @@ console.log(all)
     {
       title: 'Action',
       key: 'action',
-      fixed: 'right',
+    
       render: (_, record) => (
         <Button
           icon={<EyeOutlined />}
@@ -114,7 +112,13 @@ console.log(all)
       <h2 className="text-xl sm:text-2xl font-bold mb-6 text-gray-800">
         📊 Trade List
       </h2>
-
+<Button
+  type="primary"
+  className="mb-4"
+  onClick={() => navigate('/dashboard/trade/request')}
+>
+  Place New Trade
+</Button>
       <Input.Search
         placeholder="Search by Trade No"
         onChange={(e) => setSearchText(e.target.value)}

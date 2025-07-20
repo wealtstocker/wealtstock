@@ -27,7 +27,7 @@ const TradeForm = ({ isCustomer = false }) => {
 
   const [formData, setFormData] = useState({
     customer_id: isCustomer ? user?.id : '',
-    instrument: '',
+    stock_name: '',
     buy_price: '',
     buy_quantity: '',
     exit_price: '',
@@ -45,7 +45,7 @@ const TradeForm = ({ isCustomer = false }) => {
     if (isEdit && trade) {
       setFormData({
         customer_id: trade.customer_id || '',
-        instrument: trade.instrument || '',
+        stock_name: trade.stock_name || '',
         buy_price: trade.buy_price || '',
         buy_quantity: trade.buy_quantity || '',
         exit_price: trade.exit_price || '',
@@ -68,8 +68,8 @@ const TradeForm = ({ isCustomer = false }) => {
   };
 
   const validateTrade = () => {
-    const { customer_id, instrument, buy_price, buy_quantity, exit_price, exit_quantity, brokerage } = formData;
-    if (!customer_id || !instrument || !buy_price || !buy_quantity || !exit_price || !exit_quantity) {
+    const { customer_id, stock_name, buy_price, buy_quantity, exit_price, exit_quantity, brokerage } = formData;
+    if (!customer_id || !stock_name || !buy_price || !buy_quantity || !exit_price || !exit_quantity) {
       Toast.error('All required fields must be filled');
       return false;
     }
@@ -211,8 +211,8 @@ const TradeForm = ({ isCustomer = false }) => {
             <StockOutlined className="mr-1" /> Stock Name
           </label>
           <Input
-            value={formData.instrument}
-            onChange={(e) => handleChange('instrument', e.target.value)}
+            value={formData.stock_name}
+            onChange={(e) => handleChange('stock_name', e.target.value)}
             required
             placeholder="e.g. TATASTEEL"
             className="w-full"

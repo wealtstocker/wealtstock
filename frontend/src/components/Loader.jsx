@@ -9,9 +9,9 @@ const Loader = ({ onLoaded }) => {
       gsap.to(loaderRef.current, {
         opacity: 0,
         duration: 1,
-        onComplete: onLoaded, // Notify App it's done loading
+        onComplete: onLoaded, 
       });
-    }, 2500); // Show loader for 2.5 seconds
+    }, 500); 
 
     return () => clearTimeout(timer);
   }, [onLoaded]);

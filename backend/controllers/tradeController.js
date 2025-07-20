@@ -6,7 +6,7 @@ const isAdmin = (req) => req.user?.role === "admin" || req.user?.role === "super
 export const createTrade = async (req, res) => {
   const {
     customer_id,
-    instrument,
+    stock_name,
     buy_price,
     buy_quantity,
     exit_price,
@@ -15,7 +15,7 @@ export const createTrade = async (req, res) => {
     created_by,
   } = req.body;
 
-  if (!customer_id || !instrument || !buy_price || !buy_quantity || !exit_price || !exit_quantity) {
+  if (!customer_id || !stock_name || !buy_price || !buy_quantity || !exit_price || !exit_quantity) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
@@ -66,14 +66,14 @@ export const createTrade = async (req, res) => {
     // Insert trade
     const [result] = await connection.query(
       `INSERT INTO trades (
-        customer_id, trade_number, instrument, buy_price, buy_quantity, buy_value,
+        customer_id, trade_number, stock_name, buy_price, buy_quantity, buy_value,
         exit_price, exit_quantity, exit_value, profit_loss, profit_loss_value,
         brokerage, status, created_by, is_active
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
       [
         customer_id,
         trade_number,
-        instrument,
+        stock_name,
         buy_price,
         buy_quantity,
         buyValue,
@@ -234,14 +234,14 @@ export const updateTrade = async (req, res) => {
     // Update trade
     await connection.query(
       `UPDATE trades SET
-        customer_id = ?, instrument = ?, buy_price = ?, buy_quantity = ?,
+        customer_id = ?, stock_name = ?, buy_price = ?, buy_quantity = ?,
         buy_value = ?, exit_price = ?, exit_quantity = ?, exit_value = ?,
         brokerage = ?, profit_loss = ?, profit_loss_value = ?, status = ?,
         updated_at = NOW()
       WHERE id = ?`,
       [
         updates.customer_id || oldTrade.customer_id,
-        updates.instrument || oldTrade.instrument,
+        updates.stock_name || oldTrade.stock_name,
         buy_price,
         buy_quantity,
         buy_value,
@@ -477,7 +477,7 @@ export const getAllTrades = async (req, res) => {
 
   try {
     const [rows] = await pool.query(`
-      SELECT t.id, t.customer_id, c.full_name AS customer_name, t.trade_number, t.instrument,
+      SELECT t.id, t.customer_id, c.full_name AS customer_name, t.trade_number, t.stock_name,
              t.buy_price, t.buy_quantity, t.buy_value, t.exit_price, t.exit_quantity, t.exit_value,
              t.profit_loss, t.profit_loss_value, t.brokerage, t.status, t.created_by, t.is_active,
              t.created_at, t.updated_at
@@ -498,7 +498,7 @@ export const getMyTrades = async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      `SELECT t.id, t.trade_number, t.instrument, t.buy_price, t.buy_quantity, t.buy_value,
+      `SELECT t.id, t.trade_number, t.stock_name, t.buy_price, t.buy_quantity, t.buy_value,
               t.exit_price, t.exit_quantity, t.exit_value, t.profit_loss, t.profit_loss_value,
               t.brokerage, t.status, t.created_at
        FROM trades t
@@ -515,15 +515,10 @@ export const getMyTrades = async (req, res) => {
 
 export const getTradeById = async (req, res) => {
   const { id } = req.params;
-  const isAdminUser = isAdmin(req);
-
-  if (!isAdminUser) {
-    return res.status(403).json({ message: "Only admins can view trade details" });
-  }
 
   try {
     const [rows] = await pool.query(
-      `SELECT t.id, t.customer_id, c.full_name AS customer_name, t.trade_number, t.instrument,
+      `SELECT t.id, t.customer_id, c.full_name AS customer_name, t.trade_number, t.stock_name,
               t.buy_price, t.buy_quantity, t.buy_value, t.exit_price, t.exit_quantity, t.exit_value,
               t.profit_loss, t.profit_loss_value, t.brokerage, t.status, t.created_by, t.is_active,
               t.created_at, t.updated_at

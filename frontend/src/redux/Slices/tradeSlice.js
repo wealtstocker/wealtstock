@@ -22,7 +22,7 @@ export const fetchAllTrades = createAsyncThunk(
 
 export const fetchSingleTrade = createAsyncThunk(
   'trade/fetchOne',
-  async ({ idobin, navigate }, { rejectWithValue }) => {
+  async ({ id, navigate }, { rejectWithValue }) => {
     try {
       const res = await axiosInstance.get(`/trade/${id}`);
       console.log('fetchSingleTrade Response:', res);

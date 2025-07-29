@@ -81,7 +81,8 @@ const AdminFundRequestList = () => {
         `/wallet/approve-fund-request/${selectedFund.id}`,
         { amount }
       );
-      Toast.success("✅ Fund approved successfully");
+      console.log(res)
+      // Toast.success("✅ Fund approved successfully");
       setModalVisible(false);
       dispatch(setFundRequestApproved(selectedFund.id));
     } catch (err) {

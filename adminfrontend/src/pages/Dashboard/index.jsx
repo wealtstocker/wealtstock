@@ -237,8 +237,12 @@ const AdminDashboard = () => {
                     </div>
                     <div>
                       <Text className="!text-gray-500">Wallets Active</Text>
-                      <Title level={4} className="!text-gray-800 m-0">{balances?.length || "not fetch"}</Title>
+                      {console.log(balances?.length ?? 'N/A', balanceCount ?? 'N/A')}
+                      <Title level={4} className="!text-gray-800 m-0">
+                        {(Array.isArray(balances) ? balances.length : balanceCount ?? 0)}
+                      </Title>
                     </div>
+
                   </div>
                 </Link>
               </Card>

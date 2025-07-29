@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import AddFundPage from "../profile/AddFundPage";
 import WithdrawRequestPage from "./WithdrawRequestPage";
-import BankListPage from "./BankListPage";
-import axiosInstance from "../../../api/axiosInstance";
+import BankListPage from "./BankListPage"; 
 import { FaUserCircle, FaWallet } from "react-icons/fa";
 import { fetchWalletBalance } from "../../../redux/Slices/walletSlice";
 
@@ -13,8 +12,8 @@ const BankDetailsPage = () => {
   const { data: customer, loading: customerLoading } = useSelector(
     (state) => state.customer
   );
+  const dispatch = useDispatch();
  const { balance, loading } = useSelector((state) => state.wallet);
-   const dispatch = useDispatch();
 
    useEffect(() => {
      dispatch(fetchWalletBalance()); 

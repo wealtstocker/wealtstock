@@ -50,7 +50,7 @@ export default function BreadcrumbNav() {
   ];
 
   return (
-    <div className="flex items-center justify-between p-2 mb-2">
+    <div className="flex items-center justify-between px-1 mt-3 py-2.5">
       <div className="flex items-center ">
         <button
           onClick={() => navigate(-1)}

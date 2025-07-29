@@ -1,139 +1,42 @@
 import pool from "../config/db.js";
-
-// Middleware to check if user is admin or superadmin
 const isAdmin = (req) => req.user?.role === "admin" || req.user?.role === "superadmin";
 
 export const createTrade = async (req, res) => {
-  const {
-    customer_id,
-    stock_name,
-    buy_price,
-    buy_quantity,
-    exit_price,
-    exit_quantity,
-    brokerage,
-    created_by,
-  } = req.body;
+  const { customer_id, stock_name, buy_price, buy_quantity, exit_price, exit_quantity, brokerage, position_call } = req.body;
+  const created_by = req.user?.role === "admin" ? "admin" : "customer";
 
-  if (!customer_id || !stock_name || !buy_price || !buy_quantity || !exit_price || !exit_quantity) {
-    return res.status(400).json({ message: "Missing required fields" });
+  if (!customer_id || !stock_name || !buy_price || !buy_quantity) {
+    return res.status(400).json({ message: "Please fill Customer ID, Stock Name, Buy Price, and Buy Quantity" });
   }
 
-  const isAdminUser = isAdmin(req);
-  const status = created_by === "admin" ? "approved" : "hold"; // Customer trades start as 'hold'
-
-  const [lastTrade] = await pool.query(`
-    SELECT trade_number FROM trades
-    ORDER BY id DESC LIMIT 1
-  `);
-
-  let trade_number = "T-1001";
-  if (lastTrade.length > 0) {
-    const lastNumber = parseInt(lastTrade[0].trade_number?.split("-")[1] || "1000", 10);
-    trade_number = `T-${lastNumber + 1}`;
+  const status = created_by === "admin" ? "approved" : "hold";
+  if (exit_quantity && parseFloat(exit_quantity) > parseFloat(buy_quantity)) {
+    return res.status(400).json({ message: "Exit quantity cannot exceed buy quantity" });
   }
 
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
 
-    // Calculate trade values
-    const buyValue = parseFloat(buy_price) * parseFloat(buy_quantity);
-    const exitValue = parseFloat(exit_price) * parseFloat(exit_quantity);
-    const rawProfitLossValue = exitValue - buyValue;
-    const netProfitLossValue = rawProfitLossValue - parseFloat(brokerage || 0);
-    const profitLossValue = Math.abs(netProfitLossValue).toFixed(2);
-    const profitLoss = netProfitLossValue >= 0 ? "profit" : "loss";
-
-
-    // Wallet validation for loss trades
-    if (isAdminUser && profitLoss === "loss" && status === "approved") {
-      const [walletRows] = await connection.query(
-        `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE`,
-        [customer_id]
-      );
-      const currentBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
-      if (currentBalance < parseFloat(profitLossValue)) {
-        await connection.rollback();
-        return res.status(400).json({
-          message: "Insufficient balance for loss trade",
-          currentBalance,
-          required: profitLossValue,
-        });
-      }
+    const [lastTrade] = await connection.query("SELECT trade_number FROM trades ORDER BY id DESC LIMIT 1");
+    let trade_number = "T-1001";
+    if (lastTrade.length > 0) {
+      const lastNumber = parseInt(lastTrade[0].trade_number.split("-")[1] || "1000", 10);
+      trade_number = `T-${lastNumber + 1}`;
     }
 
-    // Insert trade
+    const buyValue = parseFloat(buy_price) * parseFloat(buy_quantity);
+    const exitValue = exit_price && exit_quantity ? parseFloat(exit_price) * parseFloat(exit_quantity) : 0;
+    const profitLossValue = exitValue > 0 ? Math.abs(exitValue - buyValue - (parseFloat(brokerage) || 0)).toFixed(2) : 0;
+    const profitLoss = exitValue > buyValue ? "profit" : exitValue < buyValue ? "loss" : "neutral";
+
     const [result] = await connection.query(
-      `INSERT INTO trades (
-        customer_id, trade_number, stock_name, buy_price, buy_quantity, buy_value,
-        exit_price, exit_quantity, exit_value, profit_loss, profit_loss_value,
-        brokerage, status, created_by, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
-      [
-        customer_id,
-        trade_number,
-        stock_name,
-        buy_price,
-        buy_quantity,
-        buyValue,
-        exit_price,
-        exit_quantity,
-        exitValue,
-        profitLoss,
-        profitLossValue,
-        brokerage || 0,
-        status,
-        created_by,
-      ]
+      `INSERT INTO trades (customer_id, trade_number, stock_name, buy_price, buy_quantity, buy_value, exit_price, exit_quantity, exit_value, profit_loss, profit_loss_value, brokerage, status, created_by, is_active, position_call, entry_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?, NOW())`,
+      [customer_id, trade_number, stock_name, buy_price, buy_quantity, buyValue, exit_price || null, exit_quantity || null, exitValue, profitLoss, profitLossValue, brokerage || 0, status, created_by, position_call || "Equity Shares"]
     );
 
-    const tradeId = result.insertId;
-
-    // Update wallet and transactions for approved trades
-    if (isAdminUser && status === "approved") {
-      const txnType = profitLoss === "profit" ? "credit" : "debit";
-      const txnDesc = `Trade ${txnType} for Trade No: ${trade_number}`;
-
-      const [txnResult] = await connection.query(
-        `INSERT INTO transactions (customer_id, type, status, amount, description)
-         VALUES (?, ?, 'completed', ?, ?)`,
-        [customer_id, txnType, profitLossValue, txnDesc]
-      );
-
-      const transactionId = txnResult.insertId;
-
-      const [walletRows] = await connection.query(
-        `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE`,
-        [customer_id]
-      );
-
-      const lastBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
-      const newBalance =
-        txnType === "credit"
-          ? lastBalance + parseFloat(profitLossValue)
-          : lastBalance - parseFloat(profitLossValue);
-
-      await connection.query(
-        `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
-         VALUES (?, ?, ?, ?, ?)`,
-        [customer_id, profitLossValue, txnType, newBalance, transactionId]
-      );
-    }
-
     await connection.commit();
-    res.status(201).json({
-      message: `Trade ${status === "hold" ? "held" : "created"} successfully`,
-      id: tradeId,
-      trade: {
-        trade_number,
-        buyValue,
-        exitValue,
-        profitLoss,
-        profitLossValue,
-        status,
-      },
-    });
+    res.status(201).json({ message: `Trade ${status === "hold" ? "held" : "created"} successfully`, id: result.insertId, trade: { trade_number, buyValue, status } });
   } catch (error) {
     await connection.rollback();
     console.error("❌ Error in createTrade:", error.message);
@@ -145,139 +48,33 @@ export const createTrade = async (req, res) => {
 
 export const updateTrade = async (req, res) => {
   const { id } = req.params;
-  const updates = req.body;
+  const { exit_price, exit_quantity, brokerage, position_call } = req.body;
   const isAdminUser = isAdmin(req);
 
-  if (!isAdminUser) {
-    return res.status(403).json({ message: "Only admins can update trades" });
-  }
+  if (!isAdminUser) return res.status(403).json({ message: "Only admins can update trades" });
 
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
 
-    // Fetch existing trade
-    const [tradeRows] = await connection.query(
-      `SELECT * FROM trades WHERE id = ? AND is_active = TRUE FOR UPDATE`,
-      [id]
-    );
-    if (!tradeRows.length) {
-      await connection.rollback();
-      return res.status(404).json({ message: "Trade not found" });
-    }
+    const [tradeRows] = await connection.query(`SELECT * FROM trades WHERE id = ? AND is_active = TRUE FOR UPDATE`, [id]);
+    if (!tradeRows.length) return res.status(404).json({ message: "Trade not found" });
 
     const oldTrade = tradeRows[0];
-
-    // Reverse previous transaction if it exists
-    const [txnRows] = await connection.query(
-      `SELECT * FROM transactions WHERE customer_id = ? AND type IN ('credit', 'debit') AND is_reversed = FALSE`,
-      [oldTrade.customer_id]
-    );
-
-    let currentBalance = 0;
-    const [walletRows] = await connection.query(
-      `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE`,
-      [oldTrade.customer_id]
-    );
-    if (walletRows.length) {
-      currentBalance = parseFloat(walletRows[0].balance);
+    if (exit_quantity && parseFloat(exit_quantity) > parseFloat(oldTrade.buy_quantity)) {
+      return res.status(400).json({ message: "Exit quantity cannot exceed buy quantity" });
     }
 
-    if (txnRows.length) {
-      const txn = txnRows[0];
-      const rollbackAmount = parseFloat(txn.amount);
-      const reverseType = txn.type === "credit" ? "debit" : "credit";
+    const buyValue = parseFloat(oldTrade.buy_price) * parseFloat(oldTrade.buy_quantity);
+    const exitValue = exit_price && exit_quantity ? parseFloat(exit_price) * parseFloat(exit_quantity) : 0;
+    const netPnl = exitValue - buyValue - (parseFloat(brokerage) || 0);
+    const profitLoss = netPnl >= 0 ? "profit" : "loss";
+    const profitLossValue = Math.abs(netPnl).toFixed(2);
 
-      currentBalance =
-        reverseType === "credit"
-          ? currentBalance + rollbackAmount
-          : currentBalance - rollbackAmount;
-
-      await connection.query(
-        `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
-         VALUES (?, ?, ?, ?, ?)`,
-        [oldTrade.customer_id, rollbackAmount, reverseType, currentBalance, txn.id]
-      );
-
-      await connection.query(
-        `UPDATE transactions SET is_reversed = TRUE WHERE id = ?`,
-        [txn.id]
-      );
-    }
-
-    // Calculate new trade values
-    const buy_price = parseFloat(updates.buy_price || oldTrade.buy_price);
-    const buy_quantity = parseInt(updates.buy_quantity || oldTrade.buy_quantity);
-    const exit_price = parseFloat(updates.exit_price || oldTrade.exit_price);
-    const exit_quantity = parseInt(updates.exit_quantity || oldTrade.exit_quantity);
-    const brokerage = parseFloat(updates.brokerage || oldTrade.brokerage || 0);
-    const status = updates.status || oldTrade.status;
-
-    const buy_value = buy_price * buy_quantity;
-    const exit_value = exit_price * exit_quantity;
-    const netPnl = exit_value - buy_value - brokerage;
-    const profit_loss = netPnl >= 0 ? "profit" : "loss";
-    const profit_loss_value = Math.abs(netPnl).toFixed(2);
-
-    // Validate balance for loss trades
-    if (status === "approved" && profit_loss === "loss") {
-      if (currentBalance < parseFloat(profit_loss_value)) {
-        await connection.rollback();
-        return res.status(400).json({
-          message: "Insufficient balance for loss trade",
-          currentBalance,
-          required: profit_loss_value,
-        });
-      }
-    }
-
-    // Update trade
     await connection.query(
-      `UPDATE trades SET
-        customer_id = ?, stock_name = ?, buy_price = ?, buy_quantity = ?,
-        buy_value = ?, exit_price = ?, exit_quantity = ?, exit_value = ?,
-        brokerage = ?, profit_loss = ?, profit_loss_value = ?, status = ?,
-        updated_at = NOW()
-      WHERE id = ?`,
-      [
-        updates.customer_id || oldTrade.customer_id,
-        updates.stock_name || oldTrade.stock_name,
-        buy_price,
-        buy_quantity,
-        buy_value,
-        exit_price,
-        exit_quantity,
-        exit_value,
-        brokerage,
-        profit_loss,
-        profit_loss_value,
-        status,
-        id,
-      ]
+      `UPDATE trades SET exit_price = ?, exit_quantity = ?, exit_value = ?, brokerage = ?, profit_loss = ?, profit_loss_value = ?, position_call = ?, updated_at = NOW() WHERE id = ?`,
+      [exit_price || null, exit_quantity || null, exitValue, brokerage || 0, profitLoss, profitLossValue, position_call || oldTrade.position_call, id]
     );
-
-    // Update wallet and transactions for approved trades
-    if (status === "approved") {
-      const txnType = profit_loss === "profit" ? "credit" : "debit";
-      const newDesc = `Trade ${txnType} for Trade No: ${oldTrade.trade_number}`;
-
-      const [txnResult] = await connection.query(
-        `INSERT INTO transactions (customer_id, type, status, amount, description)
-         VALUES (?, ?, 'completed', ?, ?)`,
-        [oldTrade.customer_id, txnType, profit_loss_value, newDesc]
-      );
-
-      const newBalance =
-        txnType === "credit"
-          ? currentBalance + parseFloat(profit_loss_value)
-          : currentBalance - parseFloat(profit_loss_value);
-
-      await connection.query(
-        `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
-         VALUES (?, ?, ?, ?, ?)`,
-        [oldTrade.customer_id, profit_loss_value, txnType, newBalance, txnResult.insertId]
-      );
-    }
 
     await connection.commit();
     res.status(200).json({ message: "Trade updated successfully" });
@@ -289,6 +86,102 @@ export const updateTrade = async (req, res) => {
     connection.release();
   }
 };
+
+
+export const approveTrade = async (req, res) => {
+  const { id } = req.params;
+  const isAdminUser = isAdmin(req);
+
+  if (!isAdminUser) {
+    return res.status(403).json({ message: "Only admins can approve trades" });
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [tradeRows] = await connection.query(
+      `SELECT * FROM trades WHERE id = ? AND is_active = TRUE AND status = 'hold' FOR UPDATE`,
+      [id]
+    );
+    if (!tradeRows.length) {
+      await connection.rollback();
+      return res.status(404).json({ message: "Trade not found or not in hold status" });
+    }
+
+    const trade = tradeRows[0];
+    const buyPrice = parseFloat(trade.buy_price || 0);
+    const buyQty = parseFloat(trade.buy_quantity || 0);
+    const exitPrice = parseFloat(trade.exit_price || 0);
+    const exitQty = parseFloat(trade.exit_quantity || 0);
+    const brokerage = parseFloat(trade.brokerage || 0);
+
+    if (
+      isNaN(buyPrice) || isNaN(buyQty) || isNaN(exitPrice) ||
+      isNaN(exitQty) || isNaN(brokerage)
+    ) {
+      await connection.rollback();
+      return res.status(400).json({ message: "Invalid trade values for calculation" });
+    }
+
+    const buyValue = buyPrice * buyQty;
+    const exitValue = exitPrice * exitQty;
+    const netProfitLossValue = exitValue - buyValue - brokerage;
+    const profitLossValue = Math.abs(netProfitLossValue).toFixed(2);
+
+
+    const profitLoss = netProfitLossValue >= 0 ? "profit" : "loss";
+
+    if (profitLoss === "loss") {
+      const [walletRows] = await connection.query(
+        `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE`,
+        [trade.customer_id]
+      );
+      const currentBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
+      if (currentBalance < parseFloat(profitLossValue)) {
+        await connection.rollback();
+        return res.status(400).json({
+          message: "Not enough money in wallet for this loss",
+          currentBalance,
+          required: profitLossValue,
+        });
+      }
+    }
+
+    await connection.query(`UPDATE trades SET status = 'approved', updated_at = NOW() WHERE id = ?`, [id]);
+
+    const txnType = profitLoss === "profit" ? "credit" : "debit";
+    const txnDesc = `Trade ${txnType} for Trade No: ${trade.trade_number}`;
+    const [txnResult] = await connection.query(
+      `INSERT INTO transactions (customer_id, type, status, amount, description) VALUES (?, ?, 'completed', ?, ?)`,
+      [trade.customer_id, txnType, profitLossValue, txnDesc]
+    );
+
+    const transactionId = txnResult.insertId;
+    const [walletRows] = await connection.query(
+      `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE`,
+      [trade.customer_id]
+    );
+    const lastBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
+    const newBalance = txnType === "credit" ? lastBalance + parseFloat(profitLossValue) : lastBalance - parseFloat(profitLossValue);
+
+    await connection.query(
+      `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id) VALUES (?, ?, ?, ?, ?)`,
+      [trade.customer_id, profitLossValue, txnType, newBalance, transactionId]
+    );
+
+    await connection.commit();
+    res.status(200).json({ message: "Trade approved successfully" });
+  } catch (error) {
+    await connection.rollback();
+    console.error("❌ Error in approveTrade:", error.message);
+    res.status(500).json({ message: "Failed to approve trade", error: error.message });
+  } finally {
+    connection.release();
+  }
+};
+
+// ... (other existing functions remain unchanged)
 
 export const deleteTrade = async (req, res) => {
   const { id } = req.params;
@@ -539,97 +432,3 @@ export const getTradeById = async (req, res) => {
   }
 };
 
-export const approveTrade = async (req, res) => {
-  const { id } = req.params;
-  const isAdminUser = isAdmin(req);
-
-  if (!isAdminUser) {
-    return res.status(403).json({ message: "Only admins can approve trades" });
-  }
-
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    // Fetch trade
-    const [tradeRows] = await connection.query(
-      `SELECT * FROM trades WHERE id = ? AND is_active = TRUE AND status = 'hold' FOR UPDATE`,
-      [id]
-    );
-    if (!tradeRows.length) {
-      await connection.rollback();
-      return res.status(404).json({ message: "Trade not found or not in hold status" });
-    }
-
-    const trade = tradeRows[0];
-
-    // Calculate trade values (for validation)
-    const buyValue = parseFloat(trade.buy_price) * parseFloat(trade.buy_quantity);
-    const exitValue = parseFloat(trade.exit_price) * parseFloat(trade.exit_quantity);
-    const rawProfitLossValue = exitValue - buyValue;
-    const netProfitLossValue = rawProfitLossValue - parseFloat(trade.brokerage || 0);
-    const profitLossValue = Math.abs(netProfitLossValue).toFixed(2);
-    const profitLoss = netProfitLossValue >= 0 ? "profit" : "loss";
-
-    // Wallet validation for loss trades
-    if (profitLoss === "loss") {
-      const [walletRows] = await connection.query(
-        `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE`,
-        [trade.customer_id]
-      );
-      const currentBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
-      if (currentBalance < parseFloat(profitLossValue)) {
-        await connection.rollback();
-        return res.status(400).json({
-          message: "Insufficient balance for loss trade",
-          currentBalance,
-          required: profitLossValue,
-        });
-      }
-    }
-
-    // Update trade status to approved
-    await connection.query(
-      `UPDATE trades SET status = 'approved', updated_at = NOW() WHERE id = ?`,
-      [id]
-    );
-
-    // Create transaction and update wallet
-    const txnType = profitLoss === "profit" ? "credit" : "debit";
-    const txnDesc = `Trade ${txnType} for Trade No: ${trade.trade_number}`;
-
-    const [txnResult] = await connection.query(
-      `INSERT INTO transactions (customer_id, type, status, amount, description)
-       VALUES (?, ?, 'completed', ?, ?)`,
-      [trade.customer_id, txnType, profitLossValue, txnDesc]
-    );
-
-    const transactionId = txnResult.insertId;
-
-    const [walletRows] = await connection.query(
-      `SELECT balance FROM wallets WHERE customer_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE`,
-      [trade.customer_id]
-    );
-
-    const lastBalance = walletRows.length ? parseFloat(walletRows[0].balance) : 0;
-    const newBalance =
-      txnType === "credit"
-        ? lastBalance + parseFloat(profitLossValue)
-        : lastBalance - parseFloat(profitLossValue);
-
-    await connection.query(
-      `INSERT INTO wallets (customer_id, amount, type, balance, transaction_id)
-       VALUES (?, ?, ?, ?, ?)`,
-      [trade.customer_id, profitLossValue, txnType, newBalance, transactionId]
-    );
-
-    await connection.commit();
-    res.status(200).json({ message: "Trade approved successfully" });
-  } catch (error) {
-    await connection.rollback();
-    console.error("❌ Error in approveTrade:", error.message);
-    res.status(500).json({ message: "Failed to approve trade", error: error.message });
-  } finally {
-    connection.release();
-  }
-};

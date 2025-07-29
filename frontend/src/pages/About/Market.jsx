@@ -60,7 +60,7 @@ function Market() {
             We Lead the Market with Trust and Innovation
           </h3>
           <p className="text-gray-600 text-sm md:text-base">
-            At <strong>WealtStock Research Firm</strong>, we combine expert knowledge, global reach, and fintech
+            At <strong>WealthStock Research Firm</strong>, we combine expert knowledge, global reach, and fintech
             innovation to deliver world-class financial strategies tailored to your goals.
           </p>
         </div>

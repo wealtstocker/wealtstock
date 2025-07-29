@@ -46,8 +46,8 @@ const CustomerTable = () => {
     setFilteredData(
       searchText
         ? customers.filter((c) =>
-          c.full_name?.toLowerCase().includes(searchText.toLowerCase())
-        )
+            c.full_name?.toLowerCase().includes(searchText.toLowerCase())
+          )
         : customers
     );
   }, [searchText, customers]);
@@ -57,12 +57,19 @@ const CustomerTable = () => {
     Toast.success(`${label} copied to clipboard`);
   };
 
+  // Toggle customer status (Activate/Deactivate)
   const handleToggleStatus = async (cust) => {
     const action = cust.is_active ? deactivateCustomer : activateCustomer;
-    dispatch(action(cust.id)).then(() => dispatch(fetchAllCustomers()));
+    try {
+      await dispatch(action(cust.id)).unwrap();
+      dispatch(fetchAllCustomers());
+      // Toast.success(`Customer ${cust.is_active ? 'deactivated' : 'activated'} successfully`);
+    } catch (err) {
+      Toast.error('Failed to update customer status');
+    }
   };
 
-
+  // Permanently delete a customer with confirmation
   const handleHardDelete = async (cust) => {
     const result = await Swal.fire({
       title: 'Are you sure?',
@@ -75,9 +82,13 @@ const CustomerTable = () => {
     });
 
     if (result.isConfirmed) {
-      dispatch(deleteCustomerPermanently(cust.id)).then(() =>
-        dispatch(fetchAllCustomers())
-      );
+      try {
+        await dispatch(deleteCustomerPermanently(cust.id)).unwrap();
+        dispatch(fetchAllCustomers());
+        Toast.success('Customer permanently deleted');
+      } catch (err) {
+        Toast.error('Failed to delete customer');
+      }
     }
   };
 
@@ -190,7 +201,7 @@ const CustomerTable = () => {
         rowKey="id"
         onRow={(record) => ({
           onClick: () => navigate(`/admin/customer/${record.id}`),
-          style: { cursor: 'pointer' }, // Optional: changes cursor on hover
+          style: { cursor: 'pointer' },
         })}
         loading={loading}
         pagination={{ pageSize: 10 }}

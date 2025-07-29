@@ -13,21 +13,16 @@ const DashboardPage = () => {
   const { balance, approvedTrades, walletHistory } = useSelector((state) => state.wallet);
   const { data: customer, loading: customerLoading } = useSelector((state) => state.customer);
 
-  // console.log("----------------", approvedTrades, balance, walletHistory)
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
-    if (user?.id) {
-      dispatch(fetchCustomerById(user.id));
-    }
+    if (user?.id) dispatch(fetchCustomerById(user.id));
     dispatch(fetchApprovedTrades());
     dispatch(fetchWalletBalance());
     dispatch(fetchWalletHistory());
   }, [dispatch]);
 
-  // Loading check
   const isLoading = customerLoading || !walletHistory || balance === null;
 
-  // Calculations
   const creditAmount =
     walletHistory?.filter((tx) => tx.type === 'credit')?.reduce((acc, tx) => acc + Number(tx.amount), 0) || 0;
 
@@ -49,7 +44,7 @@ const DashboardPage = () => {
     },
     {
       label: 'Account Type',
-      value: customer?.account_type || 'Loading...',
+      value: customer?.account_type || 'N/A',
       icon: <FaUserTie className="text-indigo-600 text-xl" />,
       border: 'border-indigo-500',
     },
@@ -71,7 +66,7 @@ const DashboardPage = () => {
     { label: 'Markets', icon: <BarChart size={18} />, href: '/dashboard/trade/markets' },
     { label: 'Bank Account', icon: <BsBank size={18} />, href: '/dashboard/bank' },
     { label: 'Payment', icon: <Globe size={18} />, href: '/dashboard/payment' },
-    { label: 'Approved', icon: <CheckCircle2 size={18} />, href: '/dashboard/payment-approved' },
+    { label: 'Trades', icon: <CheckCircle2 size={18} />, href: '/dashboard/trades' },
   ];
 
   if (isLoading) {
@@ -90,33 +85,32 @@ const DashboardPage = () => {
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-    className="container mx-auto px-4 py-6 bg-gray-50 min-h-screen">
+      className="container mx-auto px-4 py-6 bg-gray-50 min-h-screen"
+    >
       {/* Header */}
-      <div className="md:flex flex-1/2  space-y-2 justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h1 className="md:text-2xl  font-bold text-gray-800">
-            👋 Welcome Back, {customer?.full_name || 'Trader'}
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-800">👋 Welcome Back, {customer?.full_name || 'Trader'}</h1>
           <p className="text-sm text-gray-500">
             Account Type: <span className="font-medium text-gray-700">{customer?.account_type || 'N/A'}</span>
           </p>
         </div>
-        <div className="md:flex space-y-1 gap-2">
-          <Link to="/dashboard/settings" className="flex items-center gap-2 text-sm text-gray-600 hover:text-indigo-600 transition">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Link to="/dashboard/settings" className="flex items-center gap-2 text-sm text-gray-600 hover:text-indigo-600">
             <Settings size={18} /> Settings
           </Link>
-          <Link to="/support" className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-500 transition">
+          <Link to="/support" className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-500">
             <HelpCircle size={18} /> Help
           </Link>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 md:gap-6 gap-2.5 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10">
         {stats.map((item, index) => (
           <div
             key={index}
-            className={`bg-white rounded-xl md:p-5 p-4 shadow-md hover:shadow-lg transition-all border-l-4 ${item.border}`}
+            className={`bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition border-l-4 ${item.border}`}
           >
             <div className="flex items-center gap-4">
               {item.icon}
@@ -130,14 +124,14 @@ const DashboardPage = () => {
       </div>
 
       {/* Quick Links */}
-      <div className="mb-6">
+      <div className="mb-8">
         <h2 className="text-lg font-semibold text-gray-700 mb-3">🚀 Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
           {quickLinks.map((link, i) => (
             <Link
               key={i}
               to={link.href}
-              className="bg-white rounded-xl shadow p-5 md:flex flex-col items-center hover:bg-blue-50 transition-all text-center border hover:border-blue-500"
+              className="bg-white rounded-xl shadow p-4 flex flex-col items-center hover:bg-blue-50 transition border hover:border-blue-500 text-center"
             >
               <div className="mb-2 text-blue-600">{link.icon}</div>
               <span className="text-sm font-medium text-gray-700">{link.label}</span>
@@ -147,12 +141,11 @@ const DashboardPage = () => {
       </div>
 
       {/* Widgets */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 md:gap-6 gap-3 mt-10">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-10">
         <div className="bg-white rounded-xl p-5 shadow">
           <h3 className="text-lg font-semibold text-gray-700 mb-2">📈 Market Trends</h3>
           <p className="text-gray-500 text-sm">Coming soon: Live charts, stock prices, and performance insights.</p>
         </div>
-
         <div className="bg-white rounded-xl p-5 shadow">
           <h3 className="text-lg font-semibold text-gray-700 mb-2">🔐 Security Tips</h3>
           <ul className="list-disc pl-5 text-gray-600 text-sm space-y-1">
@@ -164,10 +157,10 @@ const DashboardPage = () => {
       </div>
 
       {/* Wallet History */}
-      <div className="bg-white rounded-xl p-5 shadow mt-10">
+      <div className="bg-white rounded-xl p-5 shadow">
         <h3 className="text-lg font-semibold text-gray-700 mb-3">📒 Recent Wallet History</h3>
-       <div className="overflow-x-auto w-full">
-         <table className="min-w-full text-xs sm:text-sm text-left text-gray-500">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm text-left text-gray-500">
             <thead>
               <tr className="bg-gray-100 text-gray-700">
                 <th className="py-2 px-4">Type</th>

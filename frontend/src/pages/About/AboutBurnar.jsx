@@ -31,10 +31,10 @@ const AboutUs = () => {
             About Us
           </h4>
           <h3 className="text-xl md:text-3xl font-semibold bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-4">
-            Empowering Financial Growth with WealtStock Research Firm
+            Empowering Financial Growth with WealthStock Research Firm
           </h3>
           <p className="text-gray-600 text-sm md:text-base">
-            At <strong>WealtStock Research Firm</strong>, we redefine financial strategy by offering
+            At <strong>WealthStock Research Firm</strong>, we redefine financial strategy by offering
             research-driven insights and tailored investment solutions. Our mission is to empower individuals and
             businesses to achieve long-term wealth through innovation, trust, and expertise.
           </p>

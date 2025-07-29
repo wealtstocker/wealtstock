@@ -41,7 +41,7 @@ const AdminWithdrawalList = () => {
   const handleWithdrawalAction = async (withdrawalId, action) => {
     try {
       await dispatch(updateWithdrawalStatus({ withdrawal_id: withdrawalId, action })).unwrap();
-      Toast.success(`✅ Withdrawal ${action}d`);
+      // Toast.success(`✅ Withdrawal ${action}d`);
       dispatch(fetchAllWithdrawals());
     } catch (err) {
       console.error(err);

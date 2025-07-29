@@ -80,7 +80,7 @@ const handleSubmit = async (e) => {
         ref={headingRef}
         className="text-3xl md:text-4xl font-bold text-center mb-12 bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 text-transparent bg-clip-text"
       >
-        Contact WealtStock Research Firm
+        Contact WealthStock Research Firm
       </h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">

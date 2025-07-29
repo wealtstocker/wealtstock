@@ -112,7 +112,7 @@ const CategoryCards = () => {
           Our Services
         </h2>
         <p className="text-gray-600 mt-4 max-w-2xl mx-auto text-sm md:text-base">
-          Explore how <strong>WealtStock Research Firm</strong> empowers your financial journey with powerful tools, research, and strategic insights.
+          Explore how <strong>WealthStock Research Firm</strong> empowers your financial journey with powerful tools, research, and strategic insights.
         </p>
 
         {/* Category Tabs */}

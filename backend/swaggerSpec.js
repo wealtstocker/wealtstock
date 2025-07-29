@@ -4,13 +4,13 @@ const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Matkabazar API",
+      title: "Finance API",
       version: "1.0.0",
-      description: "API documentation for Matkabazar platform",
+      description: "API documentation for Finance platform",
     },
     servers: [
       {
-        url: "http://localhost:1010/api", // change if using a different port
+        url: "http://localhost:8001/api", // change if using a different port
       },
     ],
   },

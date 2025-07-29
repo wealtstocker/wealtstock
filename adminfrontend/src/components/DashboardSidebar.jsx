@@ -16,11 +16,13 @@ import {
   UserX,
   Contact,
   Contact2Icon,
+  GitPullRequest,
 } from "lucide-react";
 import { BsBank } from "react-icons/bs";
 import { FaTimes } from "react-icons/fa";
 import { logout } from "../redux/Slices/authSlice";
 import { useDispatch } from "react-redux";
+import Swal from "sweetalert2";
 
 const DashboardSidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -30,9 +32,9 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
 
   const handleItemClick = (label, url, isLogout = false) => {
     setActiveItem(label);
+    console.log(isLogout)
     if (isLogout) {
-      dispatch(logout());
-      navigate("/");
+     handleLogout()
     } else {
       if (url) navigate(url);
     }
@@ -43,139 +45,135 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
     setSubmenuOpen((prev) => (prev === label ? null : label));
   };
 
-  const menuSections = [
-    {
-      section: null,
-      items: [
-        {
-          icon: <Home size={18} />,
-          label: "Dashboard",
-          url: "/admin/dashboard",
-        },
-      ],
-    },
-    // {
-    //   section: "User Management",
-    //   items: [
-    //     {
-    //       icon: <Users size={18} />,
-    //       label: "All Users",
-    //       url: "/admin/users",
-    //     },
-    //     {
-    //       icon: <UserCheck size={18} />,
-    //       label: "Approved Users",
-    //       url: "/dashboard/users/approved",
-    //     },
-    //     {
-    //       icon: <UserX size={18} />,
-    //       label: "Rejected Users",
-    //       url: "/dashboard/users/rejected",
-    //     },
-    //     {
-    //       icon: <FileText size={18} />,
-    //       label: "Pending Approvals",
-    //       url: "/dashboard/users/pending",
-    //     },
-    //   ],
-    // },
-    {
-      section: "Client Management",
-      items: [
-        {
-          icon: <Users size={18} />,
-          label: "All Client",
-          url: "/admin/customers",
-        },
-        {
-          icon: <BarChart size={18} />,
-          label: "Trades",
-          url: "/admin/trades",
-        },
-        {
-          icon: <ArrowDownCircle size={18} />,
-          label: "Fund-Request",
-          url: "/admin/fund-requests",
-        },
-        // {
-        //   icon: <CreditCard size={18} />,
-        //   label: "Transactions",
-        //   url: "/admin/transactions",
-        // },
-        {
-          icon: <CreditCard size={18} />,
-          label: "Withdrawal",
-          url: "/admin/withdrawal",
-        },
-      ],
-    },
-    {
-      section: "Funds",
-      items: [
-        {
-          icon: <Banknote size={18} />,
-          label: "All client Funds",
-          url: "/admin/all-wallet",
-        },
-        {
-          icon: <ArrowDownCircle size={18} />,
-          label: "Pay-In",
-          url: "/admin/pay-in",
-        },
-        {
-          icon: <ArrowUpCircle size={18} />,
-          label: "Pay-Out",
-          url: "/admin/pay-out",
-        },
-      ],
-    },
-    {
-      section: "wealthstocker",
-      items: [
-        // {
-        //   icon: <BsBank size={18} />,
-        //   label: "Bank Accounts",
-        //  url: "/admin/site-config",
-        // },
-        {
-          icon: <BsBank size={18} />,
-          label: "Site Config",
-          url: "/admin/site-config",
-        },
-        {
-          icon: <Contact size={18} />,
-          label: "Contact",
-          url: "/admin/contact",
-        },
-        {
-          icon: <Contact2Icon size={18} />,
-          label: "Callback",
-          url: "/admin/Callback",
-        },
-      ],
-    },
-    // {
-    //   section: "Settings",
-    //   items: [
-    //     {
-    //       icon: <Settings size={18} />,
-    //       label: "Admin Settings",
-    //       url: "/dashboard/settings",
-    //     },
-    //   ],
-    // },
-    {
-      section: " ",
-      items: [
-        {
-          icon: <LogOut size={18} />,
-          label: "Log Out",
-          url: "/",
-          logout: true,
-        },
-      ],
-    },
-  ];
+    const handleLogout = () => {
+      Swal.fire({
+        icon: "success",
+        title: "Logged Out",
+        text: "You have been logged out successfully.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+  
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      dispatch(logout());
+      navigate("/");
+    };
+ const menuSections = [
+  {
+    section: null,
+    items: [
+      {
+        icon: <Home size={18} />,
+        label: "Dashboard Overview",
+        url: "/admin/dashboard",
+      },
+    ],
+  },
+  {
+    section: "Clients",
+    items: [
+      {
+        icon: <UserX size={18} />,
+        label: "Pending Clients",
+        url: "/admin/customers/inactive",
+      },
+      {
+        icon: <Users size={18} />,
+        label: "All Clients",
+        url: "/admin/customers",
+      },
+    ],
+  },
+  {
+    section: "Trades",
+    items: [
+      {
+        icon: <GitPullRequest size={18} />,
+        label: "Trade Requests",
+        url: "/admin/traderequest",
+      },
+      {
+        icon: <BarChart size={18} />,
+        label: "Trade Management",
+        url: "/admin/trades",
+      },
+    ],
+  },
+  {
+    section: "Wallet & Funds",
+    items: [
+      {
+        icon: <Banknote size={18} />,
+        label: "Client Wallets",
+        url: "/admin/all-wallet",
+      },
+      {
+        icon: <ArrowDownCircle size={18} />,
+        label: "Pay-In Records",
+        url: "/admin/pay-in",
+      },
+      {
+        icon: <ArrowUpCircle size={18} />,
+        label: "Pay-Out Records",
+        url: "/admin/pay-out",
+      },
+      {
+        icon: <ArrowDownCircle size={18} />,
+        label: "Fund Requests",
+        url: "/admin/fund-requests",
+      },
+      {
+        icon: <CreditCard size={18} />,
+        label: "Withdrawals",
+        url: "/admin/withdrawal",
+      },
+    ],
+  },
+  {
+    section: "Communication",
+    items: [
+      {
+        icon: <Contact size={18} />,
+        label: "Contact Messages",
+        url: "/admin/contact",
+      },
+      {
+        icon: <Contact2Icon size={18} />,
+        label: "Callback Requests",
+        url: "/admin/callback",
+      },
+    ],
+  },
+  {
+    section: "Configuration",
+    items: [
+      {
+        icon: <BsBank size={18} />,
+        label: "Site Settings",
+        url: "/admin/site-config",
+      },
+      // Optional future setting page
+      // {
+      //   icon: <Settings size={18} />,
+      //   label: "Admin Settings",
+      //   url: "/admin/settings",
+      // },
+    ],
+  },
+  {
+    section: " ",
+    items: [
+      {
+        icon: <LogOut size={18} />,
+        label: "Log Out",
+        url: "/",
+        logout: true,
+      },
+    ],
+  },
+];
+
 
   return (
     <div
@@ -219,6 +217,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
             ))}
           </div>
         ))}
+        
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Table, Input, Button, Tag } from 'antd';
-import { EyeOutlined } from '@ant-design/icons';
+import { EyeOutlined, PlusOutlined, FileAddOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchAllTrades } from '../../../redux/Slices/tradeSlice';
@@ -17,9 +17,11 @@ const TradeListPage = () => {
 
   const filteredData = useMemo(() => {
     const trades = Array.isArray(all) ? all : all?.trades || [];
-    return trades.filter((trade) =>
-      trade.trade_number?.toLowerCase().includes(searchText.toLowerCase())
-    );
+    return trades
+      .filter((trade) => trade.status === 'approved')
+      .filter((trade) =>
+        trade.stock_name?.toLowerCase().includes(searchText.toLowerCase())
+      );
   }, [all, searchText]);
 
   const columns = [
@@ -28,7 +30,11 @@ const TradeListPage = () => {
       dataIndex: 'trade_number',
       key: 'trade_number',
       sorter: (a, b) => a.trade_number?.localeCompare(b.trade_number),
-     
+    },
+    {
+      title: 'Stock',
+      dataIndex: 'stock_name',
+      key: 'stock_name',
     },
     {
       title: 'Buy Price',
@@ -86,7 +92,7 @@ const TradeListPage = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status) => (
-        <Tag color={status === 'completed' ? 'green' : 'orange'}>
+        <Tag color={status === 'completed' ? 'green' : 'blue'}>
           {status?.toUpperCase()}
         </Tag>
       ),
@@ -94,7 +100,6 @@ const TradeListPage = () => {
     {
       title: 'Action',
       key: 'action',
-    
       render: (_, record) => (
         <Button
           icon={<EyeOutlined />}
@@ -107,26 +112,40 @@ const TradeListPage = () => {
     },
   ];
 
-  return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-screen">
-      <h2 className="text-xl sm:text-2xl font-bold mb-6 text-gray-800">
-        📊 Trade List
-      </h2>
-<Button
-  type="primary"
-  className="mb-4"
-  onClick={() => navigate('/dashboard/trade/request')}
->
-  Place New Trade
-</Button>
-      <Input.Search
-        placeholder="Search by Trade No"
-        onChange={(e) => setSearchText(e.target.value)}
-        className="mb-4 w-full max-w-sm"
-        allowClear
-        size="large"
-      />
+  const handleNewTrade = () => navigate('/dashboard/trade/request');
+  const handleRequestList = () => navigate('/dashboard/trades/requestlist');
 
+  return (
+    <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
+      <h2 className="text-xl sm:text-2xl font-bold mb-2 text-gray-800">
+        ✅ Completed Trade History
+      </h2>
+
+      {/* Controls */}
+      <div className="flex flex-wrap items-center justify-between my-4 gap-4">
+        <Input.Search
+          placeholder="Search by Stock Name"
+          onChange={(e) => setSearchText(e.target.value)}
+          className="w-full max-w-sm"
+          allowClear
+          size="large"
+        />
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleNewTrade}
+            className="bg-blue-600"
+          >
+            New Trade
+          </Button>
+          <Button icon={<FileAddOutlined />} onClick={handleRequestList}>
+            Request Trade
+          </Button>
+        </div>
+      </div>
+
+      {/* Table */}
       <div className="overflow-auto rounded-lg bg-white shadow">
         <Table
           columns={columns}
@@ -138,6 +157,11 @@ const TradeListPage = () => {
           bordered
         />
       </div>
+
+      {/* Note */}
+      <p className="text-center text-gray-500 text-sm mt-4">
+        Note: This trade data is for informational purposes only. For confirmation, please contact your brokerage agent.
+      </p>
     </div>
   );
 };

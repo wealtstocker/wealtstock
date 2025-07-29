@@ -16,7 +16,6 @@ import Login from "./pages/Login";
 import NotFound from "./components/NotFound";
 
 import ProfilePage from "./pages/Dashboard/profile/Profile";
-import TradeReportPage from "./pages/Dashboard/trade/TradeReportPage";
 import MarketPage from "./pages/Dashboard/trade/MarketPage";
 import DashboardPage from "./pages/Dashboard";
 import BankDetailsPage from "./pages/Dashboard/Bank/BankDetails";
@@ -28,6 +27,9 @@ import PaymentPage from "./pages/Dashboard/Payment/Payment";
 import TradeListPage from "./pages/Dashboard/trade/TradeListPage";
 import TradeDetailPage from "./pages/Dashboard/trade/TradeDetailPage";
 import RequestTradePage from "./pages/Dashboard/trade/RequestTradePage";
+import RequestTradePagelist from "./pages/Dashboard/trade/RequestTradePagelist";
+import AddFundPage from "./pages/Dashboard/profile/AddFundPage";
+import WithdrawRequestPage from "./pages/Dashboard/Bank/WithdrawRequestPage";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -52,18 +54,26 @@ function App() {
           <Route path="/dashboard/*" element={<DashboardLayout />}>
             <Route index element={<DashboardPage />} />
             <Route path="profile" element={<ProfilePage />} />
-            <Route path="trade/markets" element={<MarketPage />} />
-            <Route path="trade/position" element={<TradeReportPage />} />
-            <Route path="trade/request" element={<RequestTradePage />} />
+            <Route path="settings" element={<SettingsPage />} />
+
+            {/* Trading */}
             <Route path="trades" element={<TradeListPage />} />
             <Route path="trade/:id" element={<TradeDetailPage />} />
+            <Route path="trade/request" element={<RequestTradePage />} />
+            <Route path="trades/requestlist" element={<RequestTradePagelist />} />
+            <Route path="trade/markets" element={<MarketPage />} />
+
+            {/* Finance */}
             <Route path="bank" element={<BankDetailsPage />} />
             <Route path="wallet" element={<WalletPage />} />
             <Route path="payment" element={<PaymentPage />} />
             <Route path="payment-approved" element={<PaymentApprovedPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            {/* Add more dashboard pages here */}
+
+            {/* Fund Add */}
+            <Route path="add-fund" element={<AddFundPage />} />
+            <Route path="Withdrawal" element={<WithdrawRequestPage />} />
           </Route>
+
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />

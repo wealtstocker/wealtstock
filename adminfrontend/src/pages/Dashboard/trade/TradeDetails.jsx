@@ -8,6 +8,7 @@ import { Button, Spin, Tag, Alert, Modal, Tooltip } from 'antd';
 import { ArrowLeftOutlined, EditOutlined, CheckCircleOutlined, StopOutlined } from '@ant-design/icons';
 import Toast from '../../../services/toast';
 import dayjs from 'dayjs';
+import { gsap } from 'gsap';
 
 const TradeDetails = () => {
   const { id } = useParams();
@@ -23,15 +24,11 @@ const TradeDetails = () => {
       .then(() => dispatch(fetchAllBalances()));
   }, [dispatch, id]);
 
-  const getCustomerName = (id) => {
-    const customer = customers.find((c) => c.id === id);
-    return customer ? customer.full_name : 'Unknown';
-  };
+  const getCustomerName = (id) =>
+    customers.find((c) => c.id === id)?.full_name || 'Unknown';
 
-  const getCustomerBalance = (customerId) => {
-    const balanceObj = balances.find((bal) => bal.customer_id === customerId);
-    return balanceObj ? parseFloat(balanceObj.balance).toFixed(2) : '0.00';
-  };
+  const getCustomerBalance = (customerId) =>
+    balances.find((bal) => bal.customer_id === customerId)?.balance || '0.00';
 
   const formatDate = (date) => dayjs(date).format('DD MMM YYYY, hh:mm A');
 
@@ -84,35 +81,68 @@ const TradeDetails = () => {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-screen max-w-6xl mx-auto">
+      <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div className="flex items-center gap-2">
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate(-1)}
+            className="bg-gray-500 text-white hover:bg-gray-600 transition-all duration-300"
+            onMouseEnter={(e) => gsap.to(e.target, { scale: 1.05, duration: 0.3 })}
+            onMouseLeave={(e) => gsap.to(e.target, { scale: 1, duration: 0.3 })}
+          >
             Back
           </Button>
-          <h2 className="text-xl sm:text-2xl font-bold text-blue-700 ml-2">
+          <h2 className="text-xl sm:text-2xl font-bold text-blue-700">
             📄 Trade Detail: {trade.trade_number}
           </h2>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {/* Update Button (Always visible) */}
           <Button
             type="primary"
             icon={<EditOutlined />}
             onClick={() => navigate(`/admin/trades/edit/${trade.id}`)}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white transition-all duration-300"
+            onMouseEnter={(e) => gsap.to(e.target, { scale: 1.05, duration: 0.3 })}
+            onMouseLeave={(e) => gsap.to(e.target, { scale: 1, duration: 0.3 })}
           >
             Update Trade
           </Button>
-          {trade.status === 'hold' && (
+
+          {/* Continue Trade button - when status is 'hold' */}
+          {trade.status === 'hold' &&  !trade.exit_value && Number(trade.exit_value) > 0 &&(
+            <Tooltip title="Continue Trade">
+              <Button
+                type="default"
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/admin/trades/edit/${trade.id}`)}
+                className="bg-blue-500 hover:bg-blue-600 text-white transition-all duration-300"
+                onMouseEnter={(e) => gsap.to(e.target, { scale: 1.05, duration: 0.3 })}
+                onMouseLeave={(e) => gsap.to(e.target, { scale: 1, duration: 0.3 })}
+              >
+                Continue Trade
+              </Button>
+            </Tooltip>
+          )}
+
+          {/* Approve Button - only if trade is on hold and exit_value exists */}
+          {trade.status === 'hold' && trade.exit_value && Number(trade.exit_value) > 0 && (
             <Tooltip title="Approve Trade">
               <Button
                 type="primary"
                 icon={<CheckCircleOutlined />}
                 onClick={handleApproveTrade}
+                className="bg-green-500 hover:bg-green-600 transition-all duration-300 text-white"
+                onMouseEnter={(e) => gsap.to(e.target, { scale: 1.05, duration: 0.3 })}
+                onMouseLeave={(e) => gsap.to(e.target, { scale: 1, duration: 0.3 })}
               >
                 Approve
               </Button>
             </Tooltip>
           )}
+
+          {/* Deactivate Button - only if trade is not already deactivated */}
           {trade.status !== 'deactivated' && (
             <Tooltip title="Deactivate Trade">
               <Button
@@ -120,6 +150,9 @@ const TradeDetails = () => {
                 danger
                 icon={<StopOutlined />}
                 onClick={handleDeactivateTrade}
+                className="hover:bg-red-600 transition-all duration-300"
+                onMouseEnter={(e) => gsap.to(e.target, { scale: 1.05, duration: 0.3 })}
+                onMouseLeave={(e) => gsap.to(e.target, { scale: 1, duration: 0.3 })}
               >
                 Deactivate
               </Button>
@@ -140,52 +173,6 @@ const TradeDetails = () => {
         />
       )}
 
-      {/* <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-700">Trade Performance</h3>
-        ```chartjs
-        {
-          "type": "bar",
-          "data": {
-            "labels": ["Buy Value", "Sell Value", "Profit/Loss"],
-            "datasets": [{
-              "label": "Trade Metrics",
-              "data": [
-                ${trade.buy_value || 0},
-                ${trade.exit_value || 0},
-                ${parseFloat(trade.profit_loss_value || 0)}
-              ],
-              "backgroundColor": ["#36A2EB", "#FFCE56", "${isProfit ? '#36A2EB' : '#FF6384'}"],
-              "borderColor": ["#2E8BC0", "#FFB300", "${isProfit ? '#2E8BC0' : '#D81B60'}"],
-              "borderWidth": 1
-            }]
-          },
-          "options": {
-            "responsive": true,
-            "scales": {
-              "y": {
-                "beginAtZero": true,
-                "title": {
-                  "display": true,
-                  "text": "Amount (₹)",
-                  "color": "#333333"
-                }
-              }
-            },
-            "plugins": {
-              "legend": {
-                "display": false
-              },
-              "title": {
-                "display": true,
-                "text": "Trade Financial Overview",
-                "color": "#333333"
-              }
-            }
-          }
-        }
-        ```
-      </div> */}
-
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
         <InfoItem
           label="Customer"
@@ -198,9 +185,9 @@ const TradeDetails = () => {
             </span>
           }
         />
-        <InfoItem label="stock_name" value={trade.stock_name} />
-        <InfoItem label="Status" value={<StatusTag status={trade.status} />} />
-        <InfoItem label="Current Balance" value={`₹${getCustomerBalance(trade.customer_id)}`} />
+        <InfoItem label="Stock Name" value={trade.stock_name} />
+        <InfoItem label="Status" value={<Tag color={trade.status === 'approved' ? 'green' : trade.status === 'hold' ? 'blue' : 'red'}>{trade.status.toUpperCase()}</Tag>} />
+        <InfoItem label="Current Balance" value={`₹${parseFloat(getCustomerBalance(trade.customer_id)).toFixed(2)}`} />
         <InfoItem label="Created By" value={trade.created_by} />
         <InfoItem label="Trade Date" value={formatDate(trade.created_at)} />
         <InfoItem label="Last Updated" value={formatDate(trade.updated_at)} />
@@ -227,14 +214,16 @@ const TradeDetails = () => {
 
       <div className="mt-6 grid md:grid-cols-2 gap-4">
         <div
-          className={`text-lg font-bold px-4 py-3 rounded-lg ${
-            isProfit ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-          }`}
+          className={`text-lg font-bold px-4 py-3 rounded-lg ${isProfit ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
         >
-          Profit/Loss: ₹{parseFloat(trade.profit_loss_value).toFixed(2)} ({trade.profit_loss})
+          Profit/Loss: ₹{parseFloat(trade.profit_loss_value || 0).toFixed(2)} ({trade.profit_loss})
         </div>
-        <InfoItem label="Brokerage" value={`₹${trade.brokerage}`} />
+        <InfoItem label="Brokerage" value={`₹${trade.brokerage || '0.00'}`} />
       </div>
+
+      <p className="text-center text-xs text-gray-500 mt-4">
+        *Disclaimer: Trade data is for internal use only. Ensure accuracy before approving or deactivating trades. Last updated: 02:57 PM IST, July 21, 2025.
+      </p>
     </div>
   );
 };
@@ -259,10 +248,5 @@ const InfoCard = ({ title, items }) => (
     </ul>
   </div>
 );
-
-const StatusTag = ({ status }) => {
-  const color = status === 'approved' ? 'green' : status === 'hold' ? 'blue' : 'red';
-  return <Tag color={color}>{status.toUpperCase()}</Tag>;
-};
 
 export default TradeDetails;

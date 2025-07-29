@@ -8,6 +8,7 @@ export const fetchAllBalances = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await axiosInstance.get('/wallet/all-balances');
+     
       return res.data.data;
     } catch (err) {
       Toast.error(err.response?.data?.message || 'Failed to fetch balances');
@@ -122,7 +123,7 @@ export const updateWithdrawalStatus = createAsyncThunk(
 const walletSlice = createSlice({
   name: 'wallet',
   initialState: {
-    balanceCount:null,
+    balanceCount: 0 || null,
     balances: [],
     transactions: [],
     fundRequests: [],
@@ -148,7 +149,7 @@ const walletSlice = createSlice({
       .addCase(fetchAllBalances.fulfilled, (state, action) => {
         state.loadingBalances = false;
         state.balances = action.payload;
-        state.balanceCount = action?.payload?.length;
+        state.balanceCount =action.payload?.length ;
       })
       .addCase(fetchAllBalances.rejected, (state, action) => {
         state.loadingBalances = false;

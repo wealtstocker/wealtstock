@@ -12,10 +12,12 @@ import {
   Settings,
   HistoryIcon,
 } from "lucide-react";
+import Swal from "sweetalert2";
 import { BsBank } from "react-icons/bs";
-import { FaTimes } from "react-icons/fa";
+import { FaRupeeSign, FaTimes } from "react-icons/fa";
 import { logout } from "../redux/Slices/authSlice";
 import { useDispatch } from "react-redux";
+import { Button } from "antd";
 
 const DashboardSidebar = ({ isOpen, onClose }) => {
 
@@ -32,114 +34,75 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
   const toggleSubmenu = (label) => {
     setSubmenuOpen((prev) => (prev === label ? null : label));
   };
- const handleLogout = () => {
-    dispatch(logout());
-    navigate("/login");
-  };
-  const menuSections = [
-    {
-      section: null,
-      items: [
-        { icon: <Home size={18} />, label: "Dashboards", url: "/dashboard" },
-      ],
-    },
-    {
-      section: "Profile",
-      items: [
-        {
-          icon: <User size={18} />,
-          label: "Profile",
-          url: "/dashboard/profile"
-        },
-      ],
-    },
 
-    {
-      section: "Trade",
-      items: [
-        {
-          icon: <BarChart size={18} />,
-          label: "Trades",
-          url: "/dashboard/trades",
-        },
-         {
-          icon: <Banknote size={18} />,
-          label: "Markets",
-          url: "/dashboard/trade/markets",
-        },
-      ],
-    },
-    {
-      section: "Transactions Wallet",
-      items: [
-        {
-          icon: <HistoryIcon size={18} />,
-          label: "Wallet History",
-          url: "/dashboard/wallet",
-        },
-        {
-          icon: <Globe size={18} />,
-          label: "Add Fund Req",
-          url: "/dashboard/payment",
-        },
-      ],
-    },
-    // {
-    //   section: "Trading",
-    //   items: [
-    //     {
-    //       icon: <BarChart size={18} />,
-    //       label: "Trading",
-    //       submenu: true,
-    //       children: [
-    //         {
-    //           icon: <BarChart size={18} />,
-    //           label: "Position",
-    //           url: "/dashboard/trade/position",
-    //         },
-    //         {
-    //           icon: <Banknote size={18} />,
-    //           label: "Markets",
-    //           url: "/dashboard/trade/markets",
-    //         },
-    //         { label: "Transactions", url: "/dashboard/wallet" },
-    //       ],
-    //     },
-    //   ],
-    // },
-    {
-      section: "Finance",
-      items: [
-        {
-          icon: <BsBank size={18} />,
-          label: "Bank Account",
-          url: "/dashboard/bank",
-        },
-        
-        // {
-        //   icon: <CheckCircle2 size={18} />,
-        //   label: "Payment Approved",
-        //   url: "/dashboard/payment-approved",
-        // },
-        {
-          icon: <Settings size={18} />,
-          label: "Settings",
-          url: "/dashboard/settings",
-        },
-      ],
-    },
-    // {
-    //   section: " ",
-    //   items: [
-    //     {
-    //       icon: <LogOut size={18} />,
-    //       label: "Log Out",
-    //       url: "/login",
-    //       logout: true,
-    //     },
-    //   ],
-    // },
-  ];
+
+const handleLogout = () => {
+  Swal.fire({
+    icon: "success",
+    title: "Logged Out",
+    text: "You have been logged out successfully.",
+    timer: 1500,
+    showConfirmButton: false,
+  });
+
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  dispatch(logout());
+  navigate("/login");
+};
+
+const menuSections = [
+  {
+    section: null,
+    items: [
+      { icon: <Home size={18} />, label: "Dashboard Overview", url: "/dashboard" },
+    ],
+  },
+  {
+    section: "My Account",
+    items: [
+      { icon: <User size={18} />, label: "My Profile", url: "/dashboard/profile" },
+      { icon: <Settings size={18} />, label: "Settings", url: "/dashboard/settings" },
+    ],
+  },
+  {
+    section: "Trading",
+    items: [
+      { icon: <BarChart size={18} />, label: "My Trades", url: "/dashboard/trades" },
+      { icon: <Banknote size={18} />, label: "Market Watch", url: "/dashboard/trade/markets" },
+      { icon: <Banknote size={18} />, label: "Request Trade", url: "/dashboard/trade/request" },
+      { icon: <CheckCircle2 size={18} />, label: "Pending Requests", url: "/dashboard/trades/requestlist" },
+    ],
+  },
+  {
+    section: "Wallet & Finance",
+    items: [
+      {
+        icon: <FaRupeeSign size={18} />,
+        label: "Wallet",
+        submenu: true,
+        children: [
+          { label: "Add Fund", url: "/dashboard/add-fund" },
+          { label: "Withdraw", url: "/dashboard/withdrawal" },
+          { label: "Transaction History", url: "/dashboard/wallet" },
+        ],
+      },
+      {
+        icon: <BsBank size={18} />,
+        label: "Bank Details",
+        url: "/dashboard/bank",
+      },
+      {
+        icon: <HistoryIcon size={18} />,
+        label: "Fund Report",
+        url: "/dashboard/payment",
+      },
+    ],
+  },
+ 
+];
+
+
 
   return (
     <div
@@ -148,7 +111,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
     >
       {/* Sticky Header */}
       <div className="p-4 border-b sticky top-0 z-50   flex items-center justify-between">
-        <h2 className="text-xl font-bold text-red-600">Wealtstocker Research Firm</h2>
+        <h2 className="text-xl font-bold text-red-600">Wealthstocker Research Firm</h2>
         <button onClick={onClose}>
           <FaTimes className="text-red-600 text-lg hover:rotate-90 transition-transform duration-500" />
         </button>
@@ -223,8 +186,19 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
                     </div>
                   </div>
                 )}
+                
               </div>
             ))}
+            <div className="p-4 border-t absolute bottom-0 w-full bg-white">
+        <Button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-2"
+          variant="outline"
+        >
+          <LogOut size={18} />
+          Log Out
+        </Button>
+      </div>
           </div>
         ))}
       </div>

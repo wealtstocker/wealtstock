@@ -431,23 +431,27 @@ const AdminCustomerBalances = () => {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Customer</label>
-            <Select
-              placeholder="Select customer"
-              value={topUpData.customerId}
-              onChange={(value) => setTopUpData({ ...topUpData, customerId: value })}
-              className="w-full"
-              showSearch
-              optionFilterProp="children"
-              filterOption={(input, option) => option.children.toLowerCase().includes(input.toLowerCase())}
-            >
-              {customers.map((customer) => (
-                <Select.Option key={customer.id} value={customer.id}>
-                  {customer.full_name} (ID: {customer.id})
-                </Select.Option>
-              ))}
-            </Select>
-          </div>
+  <label className="block text-sm font-medium text-gray-700">Customer</label>
+  <Select
+    placeholder="Select customer"
+    value={topUpData.customerId}
+    onChange={(value) => setTopUpData({ ...topUpData, customerId: value })}
+    className="w-full"
+    showSearch
+    optionFilterProp="children"
+    filterOption={(input, option) =>
+      option?.children &&
+      String(option.children).toLowerCase().includes(input.toLowerCase())
+    }
+  >
+    {customers.map((customer) => (
+      <Select.Option key={customer.id} value={customer.id}>
+        {`${customer.full_name} (ID: ${customer.id})`}
+      </Select.Option>
+    ))}
+  </Select>
+</div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700">Amount</label>
             <InputNumber

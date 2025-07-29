@@ -434,7 +434,8 @@ const CustomerDetails = () => {
                         View
                       </Button>
                     </Tooltip>
-                    {trade.status === 'hold' && (
+              
+                       {trade.status === 'hold' && Number(trade.exit_value) > 0 && (
                       <Tooltip title="Approve Trade">
                         <Button
                           type="primary"

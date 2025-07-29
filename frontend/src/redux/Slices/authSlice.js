@@ -29,17 +29,17 @@ export const loginCustomer = createAsyncThunk(
       return response.data;
     } catch (err) {
       if (err.response?.status === 403) {
-  Swal.fire({
-    toast: true,
-    position: "top-end",
-    icon: "error",
-    title: "Your account is inactive. Please contact support.",
-    showConfirmButton: false,
-    timer: 2500,
-    timerProgressBar: true,
-  });
-  return rejectWithValue("Your account is inactive. Please contact support.");
-}
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "error",
+          title: "Your account is inactive. Please contact support.",
+          showConfirmButton: false,
+          timer: 2500,
+          timerProgressBar: true,
+        });
+        return rejectWithValue("Your account is inactive. Please contact support.");
+      }
 
       Swal.fire({
         toast: true,
@@ -63,7 +63,7 @@ export const registerCustomer = createAsyncThunk(
     try {
       const config = {
         headers: { "Content-Type": "multipart/form-data" },
-        withCredentials: true, 
+        withCredentials: true,
       };
       const response = await axiosInstance.post(
         "/auth/register",

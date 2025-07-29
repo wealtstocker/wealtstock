@@ -21,7 +21,7 @@ import { Button } from "antd";
 
 const DashboardSidebar = ({ isOpen, onClose }) => {
 
- const navigate = useNavigate();
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const [activeItem, setActiveItem] = useState("Dashboards");
   const [submenuOpen, setSubmenuOpen] = useState(null);
@@ -36,71 +36,71 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
   };
 
 
-const handleLogout = () => {
-  Swal.fire({
-    icon: "success",
-    title: "Logged Out",
-    text: "You have been logged out successfully.",
-    timer: 1500,
-    showConfirmButton: false,
-  });
+  const handleLogout = () => {
+    Swal.fire({
+      icon: "success",
+      title: "Logged Out",
+      text: "You have been logged out successfully.",
+      timer: 1500,
+      showConfirmButton: false,
+    });
 
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  dispatch(logout());
-  navigate("/login");
-};
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    dispatch(logout());
+    navigate("/login");
+  };
 
-const menuSections = [
-  {
-    section: null,
-    items: [
-      { icon: <Home size={18} />, label: "Dashboard Overview", url: "/dashboard" },
-    ],
-  },
-  {
-    section: "My Account",
-    items: [
-      { icon: <User size={18} />, label: "My Profile", url: "/dashboard/profile" },
-      { icon: <Settings size={18} />, label: "Settings", url: "/dashboard/settings" },
-    ],
-  },
-  {
-    section: "Trading",
-    items: [
-      { icon: <BarChart size={18} />, label: "My Trades", url: "/dashboard/trades" },
-      { icon: <Banknote size={18} />, label: "Market Watch", url: "/dashboard/trade/markets" },
-      { icon: <Banknote size={18} />, label: "Request Trade", url: "/dashboard/trade/request" },
-      { icon: <CheckCircle2 size={18} />, label: "Pending Requests", url: "/dashboard/trades/requestlist" },
-    ],
-  },
-  {
-    section: "Wallet & Finance",
-    items: [
-      {
-        icon: <FaRupeeSign size={18} />,
-        label: "Wallet",
-        submenu: true,
-        children: [
-          { label: "Add Fund", url: "/dashboard/add-fund" },
-          { label: "Withdraw", url: "/dashboard/withdrawal" },
-          { label: "Transaction History", url: "/dashboard/wallet" },
-        ],
-      },
-      {
-        icon: <BsBank size={18} />,
-        label: "Bank Details",
-        url: "/dashboard/bank",
-      },
-      {
-        icon: <HistoryIcon size={18} />,
-        label: "Fund Report",
-        url: "/dashboard/payment",
-      },
-    ],
-  },
- 
-];
+  const menuSections = [
+    {
+      section: null,
+      items: [
+        { icon: <Home size={18} />, label: "Dashboard Overview", url: "/dashboard" },
+      ],
+    },
+    {
+      section: "My Account",
+      items: [
+        { icon: <User size={18} />, label: "My Profile", url: "/dashboard/profile" },
+        { icon: <Settings size={18} />, label: "Settings", url: "/dashboard/settings" },
+      ],
+    },
+    {
+      section: "Trading",
+      items: [
+        { icon: <BarChart size={18} />, label: "My Trades", url: "/dashboard/trades" },
+        { icon: <Banknote size={18} />, label: "Market Watch", url: "/dashboard/trade/markets" },
+        { icon: <Banknote size={18} />, label: "Request Trade", url: "/dashboard/trade/request" },
+        { icon: <CheckCircle2 size={18} />, label: "Pending Requests", url: "/dashboard/trades/requestlist" },
+      ],
+    },
+    {
+      section: "Wallet & Finance",
+      items: [
+        {
+          icon: <FaRupeeSign size={18} />,
+          label: "Wallet",
+          submenu: true,
+          children: [
+            { label: "Add Fund", url: "/dashboard/add-fund" },
+            { label: "Withdraw", url: "/dashboard/withdrawal" },
+            { label: "Transaction History", url: "/dashboard/wallet" },
+          ],
+        },
+        {
+          icon: <BsBank size={18} />,
+          label: "Bank Details",
+          url: "/dashboard/bank",
+        },
+        {
+          icon: <HistoryIcon size={18} />,
+          label: "Fund Report",
+          url: "/dashboard/payment",
+        },
+      ],
+    },
+
+  ];
 
 
 
@@ -186,19 +186,19 @@ const menuSections = [
                     </div>
                   </div>
                 )}
-                
+
               </div>
             ))}
             <div className="p-4 border-t absolute bottom-0 w-full bg-white">
-        <Button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-2"
-          variant="outline"
-        >
-          <LogOut size={18} />
-          Log Out
-        </Button>
-      </div>
+              <Button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2"
+                variant="outline"
+              >
+                <LogOut size={18} />
+                Log Out
+              </Button>
+            </div>
           </div>
         ))}
       </div>
